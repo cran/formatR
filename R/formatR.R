@@ -5,8 +5,10 @@ formatR <- function() {
     g = ggroup(horizontal = FALSE, container = gwindow("Tidy R Source"))
     g1 = ggroup(container = g, expand = TRUE)
     g2 = ggroup(container = g)
-    txt = gtext("", container = g1, wrap = FALSE, expand = TRUE)
-    tag(txt, "font.attr") = c(family = "monospace", sizes = "medium",
+    txt = gtext("", container = g1, wrap = FALSE, font.attr = c(family = "monospace",
+        size = "medium", styles = "normal", weights = "light"),
+        expand = TRUE)
+    tag(txt, "font.attr") = c(family = "monospace", size = "medium",
         styles = "normal", weights = "light")
     tag(txt, "tidy.opt") = list(keep.comment = TRUE, keep.blank.line = TRUE,
         width.cutoff = 60)
@@ -18,23 +20,24 @@ formatR <- function() {
             svalue(txt) = readLines(s)
         tag(txt, "src.file") = s
         tooltip(txt) = s
+        focus(txt)
     })
     gbutton("convert", container = g2, handler = function(h,
         ...) {
         con = tempfile()
         enc = getOption("encoding")
         options(encoding = "")
+        on.exit(options(encoding = enc))
         writeLines(svalue(txt), con)
-        svalue(txt) = ""
         tidy.opt = tag(txt, "tidy.opt")
         text.tidy = tidy.source(con, keep.comment = tidy.opt$keep.comment,
             keep.blank.line = tidy.opt$keep.blank.line, width.cutoff = tidy.opt$width.cutoff,
             output = FALSE)$text.tidy
         # Encoding(text.tidy)='UTF-8'
         # text.tidy=iconv(text.tidy,from='UTF-8',to='GB2312')
-        insert(txt, text.tidy, font.attr = tag(txt, "font.attr"))
-        options(encoding = enc)
+        svalue(txt) = text.tidy
         unlink(con)
+        focus(txt)
     })
     gbutton("save", container = g2, handler = function(h, ...) {
         s = tag(txt, "src.file")
@@ -65,10 +68,11 @@ formatR <- function() {
             echo = TRUE))
         x = gsub(sprintf("%s = \"|%s\"", text.tidy$begin.comment,
             text.tidy$end.comment), "", x)
-        rm(list = text.tidy$begin.comment, pos = 1)
+        try(rm(list = text.tidy$begin.comment, pos = 1))
         cat(paste(x, collapse = "\n"), "\n")
         close(zz)
         unlink(con)
+        focus(txt)
     })
     gbutton("select-font", container = g2, handler = function(h,
         ...) {
@@ -78,7 +82,7 @@ formatR <- function() {
         ft = tag(txt, "font.attr")
         tbl[1, 1, expand = TRUE] = (gf.size <- gframe("Size",
             container = tbl))
-        r.size = gradio(tag(txt)$tags$sizes, which(ft["sizes"] ==
+        r.size = gradio(tag(txt)$tags$sizes, which(ft["size"] ==
             tag(txt)$tags$sizes), horizontal = TRUE, container = gf.size)
         tbl[2, 1, expand = TRUE] = (gf.weight <- gframe("Weight",
             container = tbl))
@@ -91,16 +95,16 @@ formatR <- function() {
         g1 = ggroup(container = g)
         b.ok = gbutton("ok", container = g1, handler = function(h,
             ...) {
-            tmp = svalue(txt)
-            svalue(txt) = ""
-            ft = c(family = "monospace", sizes = svalue(r.size),
+            ft = c(family = "monospace", size = svalue(r.size),
                 weights = svalue(r.weight), styles = svalue(r.style))
-            insert(txt, tmp, font.attr = ft)
+            font(txt) = ft
             tag(txt, "font.attr") = ft
+            focus(txt)
             dispose(w)
         })
         b.cancel = gbutton("cancel", container = g1, handler = function(h,
             ...) {
+            focus(txt)
             dispose(w)
         })
     })
@@ -142,6 +146,7 @@ formatR <- function() {
                   width.cutoff = svalue(r.wi))
                 tag(txt, "enc.from") = svalue(r.enc.from)
                 tag(txt, "enc.to") = svalue(r.enc.to)
+                focus(txt)
                 dispose(w)
             }
         })
@@ -153,4 +158,3 @@ formatR <- function() {
     focus(txt)
     invisible(NULL)
 }
-
