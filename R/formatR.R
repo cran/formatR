@@ -1,69 +1,144 @@
-##' `Tidy up' R code and partially preserve comments.
-##' Actually this function has nothing to do with code optimization; it just
-##' returns parsed source code, but some comments can be preserved, which is
-##' different with \code{\link[base]{parse}}. See `Details'.
+##' `Tidy up' R code and try to preserve comments.
+##' This function has nothing to do with code optimization; it just
+##' returns parsed source code, but also tries to preserve comments,
+##' which is different with \code{\link[base]{parse}}. See `Details'.
+##' (Please read the HTML help page instead of the text help to avoid
+##' confusion)
 ##'
-##' This function helps the users to tidy up their source code in a sense that
-##' necessary indents and spaces will be added, etc. See
-##' \code{\link[base]{parse}}. But comments which are in single lines will be
-##' preserved if \code{keep.comment = TRUE} (inline comments will be removed).
+##' This function helps the users to tidy up their source code in a
+##' sense that necessary indents and spaces will be added, etc. See
+##' \code{\link[base]{parse}}. But comments will be preserved if
+##' \code{keep.comment = TRUE}.
 ##'
-##' The method to preserve comments is to protect them as strings in disguised
-##' assignments: combine \code{end.comment} to the end of a comment line and
-##' 'assign' the whole line to \code{begin.comment}, so the comment line will
-##' not be removed when parsed. At last, we remove the identifiers
-##' \code{begin.comment} and \code{end.comment}.
+##' The method to preserve comments is to protect them as strings in
+##' disguised assignments. For example, there is a single line of
+##' comments in the source code:
 ##'
-##' @param source a string: location of the source code (default to be the
-##'   clipboard; this means we can copy the code to clipboard and use
-##'   \code{tidy.souce()} without specifying the argument \code{source})
-##' @param keep.comment logical value: whether to keep comments or not?
-##' (\code{TRUE} by default)
-##' @param keep.blank.line logical value: whether to keep blank lines or not?
-##' (\code{FALSE} by default)
-##' @param begin.comment,end.comment identifiers to mark the comments
+##' \verb{  # asdf}
+##'
+##' It will be first masked as
+##'
+##' \verb{SOME_IDENTIFIER = "  # asdfANOTHER_IDENTIFIER"}
+##'
+##' which is a legal R expression, so \code{\link[base]{parse}} can
+##' deal with it and will no longer remove the disguised comments.
+##' In the end the identifiers will be removed to restore the original
+##' comments, i.e. the strings \code{'SOME_IDENTIFIER = "'} and
+##' \code{'ANOTHER_IDENTIFIER"'} are replaced with empty strings.
+##'
+##' ``Inline'' comments are identified as ``two or more spaces'' plus
+##' the hash symbol \code{#} in your source code, e.g.
+##'
+##' \verb{1+1  #  comments}
+##'
+##' or
+##'
+##' \verb{1+1    # comments}
+##'
+##' This might be dangerous to your source code, for instance,
+##'
+##' \verb{a = "I'm a string   #yes"}
+##'
+##' does not contain comments, but this function will treat it as if
+##' it does!
+##'
+##' Inline comments are first disguised as a sum with its preceding R
+##' code, which is essentially meaningless but syntactically correct!
+##' For example,
+##'
+##' \verb{1+1 + "   # comments"}
+##'
+##' then \code{\link[base]{parse}} will deal with this expression;
+##' again, the disguised comments will not be removed. In the end,
+##' inline comments will be freed as well (remove the plus sign and
+##' surrounding double quotes).
+##'
+##' All these special treatments to comments are due to the fact that
+##' \code{\link[base]{parse}} and \code{\link[base]{deparse}} can tidy
+##' the R code at the price of dropping all the comments.
+##'
+##' @param source a string: location of the source code (default to be
+##' the clipboard; this means we can copy the code to clipboard and
+##' use \code{tidy.souce()} without specifying the argument
+##' \code{source})
+##' @param keep.comment logical value: whether to keep comments or
+##' not? (\code{TRUE} by default)
+##' @param keep.blank.line logical value: whether to keep blank lines
+##' or not? (\code{FALSE} by default)
 ##' @param output output to the console or a file using
-##'   \code{\link[base]{cat}}?
-##' @param width.cutoff passed to \code{\link[base]{deparse}}: integer in [20,
-##'   500] determining the cutoff at which line-breaking is tried (default to be
-##' \code{0.75 * getOption("width")})
-##' @param \dots other arguments passed to \code{\link[base]{cat}}, e.g.
-##'   \code{file}
-##' @return A list with components \item{text.tidy}{The parsed code as a
-##'   character vector.} \item{text.mask}{The code containing comments, which
-##'   are masked in assignments.} \item{begin.comment, end.comment}{
-##'   identifiers used to mark the comments }
+##' \code{\link[base]{cat}}?
+##' @param text an alternative way to specify the input: if it is
+##' \code{NULL}, the function will read the source code from the
+##' \code{source} argument; alternatively, if \code{text} is a
+##' character vector containing the source code, it will be used as
+##' the input and the \code{source} argument will be ignored
+##' @param width.cutoff passed to \code{\link[base]{deparse}}: integer
+##' in [20, 500] determining the cutoff at which line-breaking is
+##' tried (default to be \code{0.75 * getOption("width")})
+##' @param ... other arguments passed to \code{\link[base]{cat}},
+##' e.g. \code{file} (this can be useful for batch-processing R
+##' scripts, e.g. \code{tidy.source(source = 'input.R', file =
+##' 'output.R')})
+##' @return A list with components \item{text.tidy}{The parsed code as
+##' a character vector.} \item{text.mask}{The code containing
+##' comments, which are masked in assignments.} \item{begin.comment,
+##' end.comment}{ identifiers used to mark the comments }
 ##'
-##' @note For Mac users, this function will automatically set \code{source} to
-##'   be \code{pipe("pbpaste")} so that we still don't need to specify this
-##'   argument if we want to read the code form the clipboard.
+##' @note When \code{keep.comment == TRUE}, \emph{you must not use
+##' double quotes in your inline comments -- only single quotes are
+##' allowed!!} For example, the code below will make the function
+##' fail:
 ##'
-##' There are hidden options which can control the behaviour of this function:
-##' the argument \code{keep.comment} gets value from \code{options('keep.comment')}
-##' by default; and \code{keep.blank.line} from \code{options('keep.blank.line')}.
-##' @author Yihui Xie <\url{http://yihui.name}> with substantial contribution
-##'   from Yixuan Qiu <\url{http://yixuan.cos.name}>
+##' \verb{1 + 1  # here is the "comment"}
+##'
+##' Instead, you have to write:
+##'
+##' \verb{1 + 1  # here is the 'comment'}
+##'
+##' There are hidden options which can control the behaviour of this
+##' function: the argument \code{keep.comment} gets value from
+##' \code{options('keep.comment')} by default; and
+##' \code{keep.blank.line} from \code{options('keep.blank.line')}.
+##' @author Yihui Xie <\url{http://yihui.name}> with substantial
+##' contribution from Yixuan Qiu <\url{http://yixuan.cos.name}>
 ##' @seealso \code{\link[base]{parse}}, \code{\link[base]{deparse}},
-##'   \code{\link[base]{cat}}
+##' \code{\link[base]{cat}}
 ##' @references
-##'   \url{http://yihui.name/en/2010/04/formatr-farewell-to-ugly-r-code/}
+##' \url{http://yihui.name/en/2010/04/formatr-farewell-to-ugly-r-code/}
 ##' @keywords IO
 ##' @export
 ##' @examples
 ##'
+##' ## use the 'text' argument
+##' src = c('# a single line of comments is preserved', '1+1', 'if(TRUE){',
+##' paste('x=1  ', '# comments begin with at least 2 spaces!'), '}else{',
+##' "x=2;print('Oh no... ask the right bracket to go away!')}",
+##' '1*3 # this comment will be dropped!')
+##'
+##' ## source code
+##' cat(src, sep = '\n')
+##'
+##' ## the formatted version
+##' tidy.source(text = src)
+##'
 ##' ## tidy up the source code of image demo
 ##' x = file.path(system.file(package = "graphics"), "demo", "image.R")
+##'
 ##' # to console
 ##' tidy.source(x)
+##'
 ##' # to a file
 ##' f = tempfile()
 ##' tidy.source(x, keep.blank.line = TRUE, file = f)
+##'
 ##' ## check the original code here and see the difference
 ##' file.show(x)
 ##' file.show(f)
+##'
 ##' ## use global options
 ##' options(keep.comment = TRUE, keep.blank.line = FALSE)
 ##' tidy.source(x)
+##'
 ##' ## if you've copied R code into the clipboard
 ##' \dontrun{
 ##' tidy.source("clipboard")
@@ -71,11 +146,17 @@
 ##' tidy.source("clipboard", file = "clipboard")
 ##' }
 ##'
+##'
 tidy.source = function(source = "clipboard", keep.comment,
-    keep.blank.line, begin.comment, end.comment, output = TRUE,
+    keep.blank.line, output = TRUE, text = NULL,
     width.cutoff = 0.75 * getOption("width"), ...) {
-    if (source == "clipboard" && Sys.info()["sysname"] == "Darwin") {
-        source = pipe("pbpaste")
+    if (is.null(text)) {
+        if (source == "clipboard" && Sys.info()["sysname"] == "Darwin") {
+            source = pipe("pbpaste")
+        }
+        text.lines = readLines(source, warn = FALSE)
+    } else {
+        text.lines = text
     }
     if (missing(keep.comment)) {
         keep.comment = if (is.null(getOption('keep.comment'))) TRUE else getOption('keep.comment')
@@ -93,20 +174,11 @@ tidy.source = function(source = "clipboard", keep.comment,
         }
         return(res)
     }
-    text.lines = readLines(source, warn = FALSE)
     if (isTRUE(keep.comment)) {
-        identifier = function() paste(sample(LETTERS), collapse = "")
-        if (missing(begin.comment))
-            begin.comment = identifier()
-        if (missing(end.comment))
-            end.comment = identifier()
-        text.lines = gsub("^[[:space:]]+|[[:space:]]+$", "",
-            text.lines)
-        while (length(grep(sprintf("%s|%s", begin.comment, end.comment),
-            text.lines))) {
-            begin.comment = identifier()
-            end.comment = identifier()
-        }
+        ## if you have variable names like this in your code, then you really beat me...
+        begin.comment = "BeGiN_TiDy_IdEnTiFiEr_HaHaHa"
+        end.comment = "HaHaHa_EnD_TiDy_IdEnTiFiEr"
+        text.lines = gsub("^[[:space:]]+|[[:space:]]+$", "", text.lines)
         head.comment = substring(text.lines, 1, 1) == "#"
         if (any(head.comment)) {
             text.lines[head.comment] = gsub("\"", "'", text.lines[head.comment])
@@ -115,11 +187,13 @@ tidy.source = function(source = "clipboard", keep.comment,
         }
         blank.line = text.lines == ""
         if (any(blank.line) && isTRUE(keep.blank.line))
-            text.lines[blank.line] = sprintf("%s=\"%s\"", begin.comment,
-                end.comment)
+            text.lines[blank.line] = sprintf("%s=\"%s\"", begin.comment, end.comment)
+        ## replace end-of-line comments by + 'comments' to cheat R
+        text.lines[!head.comment] = sub("([ ]{2,}#.*)$", " + \"\\1\"", text.lines[!head.comment])
         text.mask = tidy.block(text.lines)
         text.tidy = gsub(sprintf("%s = \"|%s\"", begin.comment,
             end.comment), "", text.mask)
+        text.tidy = gsub(" \\+[ ]{0,1}[\n ]*\"([ ]{2,}#[^\"]*)\"", "\\1", text.tidy)
     }
     else {
         text.tidy = text.mask = tidy.block(text.lines)
@@ -169,12 +243,10 @@ tidy.source = function(source = "clipboard", keep.comment,
 ##' formatR()
 ##'
 ##' ## tcl/tk interface: need gWidgetstcltk package
-##' options(guiToolkit = "tcltk")
-##' formatR()
+##' formatR('tcltk')
 ##'
 ##' ## Java interface: need gWidgetsrJava package
-##' options(guiToolkit = "rJava")
-##' formatR()
+##' formatR('rJava')
 ##'
 ##' }
 ##'
@@ -204,21 +276,15 @@ formatR = function(guiToolkit = 'RGtk2') {
     })
     gbutton("Convert", container = g2, handler = function(h,
         ...) {
-        con = tempfile()
-        enc = getOption("encoding")
-        options(encoding = "native.enc")
-        on.exit(options(encoding = enc))
-        originalCode <- svalue(txt)
-        Encoding(originalCode) <- "UTF-8"
-        writeLines(originalCode, con)
         tidy.opt = tag(txt, "tidy.opt")
-        text.tidy = tidy.source(con, keep.comment = tidy.opt$keep.comment,
-            keep.blank.line = tidy.opt$keep.blank.line, width.cutoff = tidy.opt$width.cutoff,
+        src = unlist(strsplit(svalue(txt), '\n'))
+        Encoding(src) = 'UTF-8'
+        text.tidy = tidy.source(text = src,
+            keep.comment = tidy.opt$keep.comment,
+            keep.blank.line = tidy.opt$keep.blank.line,
+            width.cutoff = tidy.opt$width.cutoff,
             output = FALSE)$text.tidy
-        ## Encoding works on some platforms for multi-byte characters...
-        ## Encoding(text.tidy) = "UTF-8"
         svalue(txt) = text.tidy
-        unlink(con)
     })
     gbutton("Save", container = g2, handler = function(h, ...) {
         s = tag(txt, "src.file")
@@ -235,24 +301,11 @@ formatR = function(guiToolkit = 'RGtk2') {
     })
     gbutton("Execute", container = g2, handler = function(h,
         ...) {
-        con = tempfile()
-        enc = getOption("encoding")
-        options(encoding = "")
-        writeLines(svalue(txt), con)
-        tidy.opt = tag(txt, "tidy.opt")
-        text.tidy = tidy.source(con, keep.comment = tidy.opt$keep.comment,
-            keep.blank.line = tidy.opt$keep.blank.line, width.cutoff = tidy.opt$width.cutoff,
-            output = FALSE)
-        zz = textConnection(text.tidy$text.mask)
-        options(encoding = enc)
-        x = capture.output(source(zz, max.deparse.length = Inf,
-            echo = TRUE))
-        x = gsub(sprintf("%s = \"|%s\"", text.tidy$begin.comment,
-            text.tidy$end.comment), "", x)
-        # try(rm(list = text.tidy$begin.comment, pos = 1))
-        cat(paste(x, collapse = "\n"), "\n")
+        src = svalue(txt)
+        Encoding(src) = 'UTF-8'
+        zz = textConnection(src)
+        source(zz, max.deparse.length = Inf, echo = TRUE)
         close(zz)
-        unlink(con)
     })
     if (getOption("guiToolkit") == "RGtk2") {
         gbutton("Select-font", container = g2, handler = function(h,

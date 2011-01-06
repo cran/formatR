@@ -1,7 +1,8 @@
 \name{formatR}
 \alias{formatR}
 \title{GUI to format R code.}
-\usage{formatR(guiToolkit="RGtk2")}
+\usage{formatR(guiToolkit = "RGtk2")
+}
 \description{GUI to format R code.
 Create a GUI (via GTK+ by default) to format R code.}
 \details{This function calls \code{\link{tidy.source}} to format R code.
@@ -23,22 +24,22 @@ and it can only set font styles for the selected texts.}
 \author{Yihui Xie <\url{http://yihui.name}>}
 \seealso{\code{\link{tidy.source}}}
 \references{\url{http://yihui.name/en/2010/04/formatr-farewell-to-ugly-r-code/}}
-\arguments{\item{guiToolkit}{the GUI toolkit to use}}
+\arguments{\item{guiToolkit}{the GUI toolkit to use}
+}
 \examples{\dontrun{
-
-## a GUI will show up on loading if one of the gWidgets
-##   toolkit is present (e.g. via library(gWidgetsRGtk2))
-library(formatR)
-
-## manually call the GUI
-formatR()
-
-## tcl/tk interface: need gWidgetstcltk package
-options(guiToolkit = "tcltk")
-formatR()
-
-## Java interface: need gWidgetsrJava package
-options(guiToolkit = "rJava")
-formatR()
-
+    
+    ## a GUI will show up on loading if one of the gWidgets
+    ##   toolkit is present (e.g. via library(gWidgetsRGtk2))
+    library(formatR)
+    
+    ## manually call the GUI
+    formatR()
+    
+    ## tcl/tk interface: need gWidgetstcltk package
+    formatR("tcltk")
+    
+    ## Java interface: need gWidgetsrJava package
+    formatR("rJava")
+    
 }}
+
