@@ -1,12 +1,13 @@
 \name{unmask.source}
 \alias{unmask.source}
 \title{Restore the real source code from the masked text.}
-\usage{unmask.source(text.mask)
+\usage{unmask.source(text.mask, replace.tab = FALSE)
 }
 \description{Restore the real source code from the masked text.}
 \value{the real source code (a character vector)}
 \author{Yihui Xie <\url{http://yihui.name}>}
 \arguments{\item{text.mask}{the masked source code}
+\item{replace.tab}{whether to replace \code{\\\\t} with \code{\\t}}
 }
 \examples{library(formatR)
 

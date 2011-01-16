@@ -23,12 +23,13 @@ examples below. Note the ``Font'' button is only for the GTK+ interface.}
 \examples{if (interactive() && require("gWidgetsRGtk2")) {
     
     ## a GUI will show up on loading if one of the gWidgets
-    ##   toolkit is present (e.g. via library(gWidgetsRGtk2))
+    ## toolkit is present (e.g. via library(gWidgetsRGtk2))
     library(formatR)
     
     g = formatR()
     
-    ## we have control over the text widget, e.g. set or get the text
+    ## we have control over the text widget, e.g. set or get
+    #   the text
     
     svalue(g) = c("# a single line of comments is preserved", 
         "1+1", "if(TRUE){", paste("x=1 ", "# comments begin with at least 2 spaces!"), 

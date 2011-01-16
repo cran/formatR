@@ -99,6 +99,12 @@
 ##' the default values will be \code{TRUE}, \code{FALSE} and
 ##' \code{FALSE} respectively.
 ##'
+##' Also note that if \code{keep.space} is \code{FALSE}, single lines
+##' of long comments will be wrapped into shorter ones automatically.
+##' Otherwise, long comments will not be wrapped, so they may exceed
+##' the page margin, and \code{\\\\t} will be replaced with
+##' \code{\\t}.
+##'
 ##' \subsection{Warning}{ The best strategy to avoid failure is to put
 ##' comments in whole lines or after \emph{complete} R
 ##' expressions. Here are some examples which could make
@@ -127,9 +133,13 @@
 ##' "x=1  # comments begin with at least 2 spaces!", '}else{',
 ##' "x=2;print('Oh no... ask the right bracket to go away!')}",
 ##' '1*3 # this comment will be dropped!',
-##' "2+2+2    # 'short comments'",
+##' "2+2+2    # 'short comments'", "   ",
 ##' "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments",
-##' "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line")
+##' "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line",
+##' "\t\t## tabs/spaces before comments: use keep.space=TRUE to keep them",
+##' "'a character string with \t in it'",
+##' "# note tabs will be converted to spaces when keep.space = TRUE",
+##' paste("## here is a", paste(rep("long", 20), collapse = ' '), "comment"))
 ##'
 ##' ## source code
 ##' cat(src, sep = '\n')
@@ -215,16 +225,30 @@ tidy.source = function(source = "clipboard", keep.comment,
         head.comment = grepl('^[[:space:]]*#', text.lines)
         if (any(head.comment)) {
             text.lines[head.comment] = gsub("\"", "'", text.lines[head.comment])
-            text.lines[head.comment] = sprintf("%s=\"%s%s\"",
-                begin.comment, text.lines[head.comment], end.comment)
         }
+        ## wrap long comments if you do not want to preserve leading spaces
+        if (!keep.space) {
+            head.idx = which(head.comment)
+            k = 0 # k records how far the wrapped comments have pushed the index
+            for (i in head.idx) {
+                j = i + k               # j records the real index
+                tmp = strwrap(text.lines[j], width = width.cutoff, prefix = "# ",
+                              exdent = 2, initial = '')
+                text.lines[j] = tmp[1]
+                if (length(tmp) > 1) text.lines = append(text.lines, tmp[-1], j)
+                k = k + length(tmp) - 1
+            }
+            head.comment = grepl('^[[:space:]]*#', text.lines)
+        }
+        text.lines[head.comment] = sprintf("%s=\"%s%s\"",
+                begin.comment, text.lines[head.comment], end.comment)
         blank.line = grepl('^[[:space:]]*$', text.lines)
         if (any(blank.line) && isTRUE(keep.blank.line))
             text.lines[blank.line] = sprintf("%s=\"%s\"", begin.comment, end.comment)
         ## replace end-of-line comments to cheat R
         text.lines[!head.comment] = sub("([ ]{2,}#[^\"]*)$", " %InLiNe_IdEnTiFiEr% \"\\1\"", text.lines[!head.comment])
         text.mask = tidy.block(text.lines)
-        text.tidy = unmask.source(text.mask)
+        text.tidy = unmask.source(text.mask, replace.tab = keep.space)
     }
     else {
         text.tidy = text.mask = tidy.block(text.lines)
@@ -239,6 +263,7 @@ tidy.source = function(source = "clipboard", keep.comment,
 ##'
 ##'
 ##' @param text.mask the masked source code
+##' @param replace.tab whether to replace \code{\\\\t} with \code{\\t}
 ##' @return the real source code (a character vector)
 ##' @author Yihui Xie <\url{http://yihui.name}>
 ##' @export
@@ -260,13 +285,13 @@ tidy.source = function(source = "clipboard", keep.comment,
 ##'
 ##' cat(unmask.source(x), sep = '\n')
 ##'
-unmask.source = function(text.mask) {
+unmask.source = function(text.mask, replace.tab = FALSE) {
     text.tidy = gsub("\\.BeGiN_TiDy_IdEnTiFiEr_HaHaHa = \"|\\.HaHaHa_EnD_TiDy_IdEnTiFiEr\"", "", text.mask)
     ## if the comments were separated into the next line, then remove '\n' after
     ##   the identifier first to move the comments back to the same line
     text.tidy = gsub(" %InLiNe_IdEnTiFiEr%[ ]*[^\n]*\"([ ]{2,}#[^\"]*)\"", "\\1",
     gsub("%InLiNe_IdEnTiFiEr%[ ]*\n", "%InLiNe_IdEnTiFiEr%", text.tidy))
-    text.tidy
+    if (replace.tab) gsub('\\\\t', '\t', text.tidy) else text.tidy
 }
 
 ##' A GUI to format R code.
