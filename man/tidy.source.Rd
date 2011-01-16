@@ -80,6 +80,12 @@ from \code{options('keep.blank.line')}, and \code{keep.space} from
 the default values will be \code{TRUE}, \code{FALSE} and
 \code{FALSE} respectively.
 
+Also note that if \code{keep.space} is \code{FALSE}, single lines
+of long comments will be wrapped into shorter ones automatically.
+Otherwise, long comments will not be wrapped, so they may exceed
+the page margin, and \code{\\\\t} will be replaced with
+\code{\\t}.
+
 \subsection{Warning}{ The best strategy to avoid failure is to put
 comments in whole lines or after \emph{complete} R
 expressions. Here are some examples which could make
@@ -129,8 +135,12 @@ src = c("    # a single line of comments is preserved",
     "1+1", "  ", "if(TRUE){", "x=1  # comments begin with at least 2 spaces!", 
     "}else{", "x=2;print('Oh no... ask the right bracket to go away!')}", 
     "1*3 # this comment will be dropped!", "2+2+2    # 'short comments'", 
-    "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments", 
-    "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line")
+    "   ", "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments", 
+    "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line", 
+    "\t\t## tabs/spaces before comments: use keep.space=TRUE to keep them", 
+    "'a character string with \t in it'", "# note tabs will be converted to spaces when keep.space = TRUE", 
+    paste("## here is a", paste(rep("long", 20), collapse = " "), 
+        "comment"))
 
 ## source code
 cat(src, sep = "\n")
@@ -176,6 +186,10 @@ if (interactive()) {
     ## write into clipboard again
     tidy.source("clipboard", file = "clipboard")
 }}
+
+
+
+
 
 
 

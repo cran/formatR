@@ -1,8 +1,8 @@
 Package: formatR
 Type: Package
 Title: Format R Code Automatically
-Version: 0.1-8
-Date: 2011-01-10
+Version: 0.1-9
+Date: 2011-01-16
 Author: Yihui Xie
 Maintainer: Yihui Xie <xie@yihui.name>
 Description: This package provides a function tidy.source() and
@@ -16,6 +16,6 @@ License: GPL-2 | GPL-3
 URL: http://yihui.name
 BugReports: https://github.com/yihui/formatR/issues
 Collate: 'formatR.R' 'zzz.R'
-Packaged: 2011-01-10 01:22:10 UTC; Yihui
+Packaged: 2011-01-16 06:02:09 UTC; Yihui
 Repository: CRAN
-Date/Publication: 2011-01-10 07:46:28
+Date/Publication: 2011-01-16 09:37:02
