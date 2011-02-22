@@ -1,12 +1,13 @@
 \name{tidy.source}
 \alias{tidy.source}
-\title{`Tidy up' R code and try to preserve comments.}
+\title{`Tidy up' R code and try to preserve comments}
 \usage{tidy.source(source = "clipboard", keep.comment, keep.blank.line, 
     keep.space, output = TRUE, text, width.cutoff = 0.75 * getOption("width"), 
     ...)
 
 }
-\description{`Tidy up' R code and try to preserve comments.
+
+\description{
 This function has nothing to do with code optimization; it just
 returns parsed source code, but also tries to preserve comments,
 which is different with \code{\link[base]{parse}}. See `Details'.}

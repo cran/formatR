@@ -1,9 +1,10 @@
 \name{formatR}
 \alias{formatR}
-\title{A GUI to format R code.}
+\title{A GUI to format R code}
 \usage{formatR(guiToolkit = "RGtk2")
+
 }
-\description{A GUI to format R code.
+\description{
 Create a GUI (via GTK+ by default) to format R code.}
 \details{This function calls \code{\link{tidy.source}} to format R code.
 Spaces and indent will be added to the code automatically.

@@ -1,10 +1,11 @@
 \name{parse.tidy}
 \alias{parse.tidy}
-\title{Modified versions of parse() and deparse().}
+\title{Modified versions of parse() and deparse()}
 \usage{parse.tidy(text, ...)
 deparse.tidy(expr, ...)
 
 }
+
 \description{Modified versions of parse() and deparse().}
 \details{\code{parse.tidy}: the source code is masked to preserve comments, then this function
 uses \code{\link[base]{parse}} to return the parsed but

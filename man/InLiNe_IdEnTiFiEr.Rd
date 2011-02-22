@@ -1,9 +1,9 @@
 \name{InLiNe_IdEnTiFiEr}
 \alias{\%InLiNe_IdEnTiFiEr\%}
 \alias{\%InLiNe_IdEnTiFiEr\%}
-\title{A weird operator for internal use only.}
+\title{A weird operator for internal use only}
 \usage{x \%InLiNe_IdEnTiFiEr\% y}
-\description{A weird operator for internal use only.
+\description{
 This operator is almost meaningless; it is used to mask the inline comments.}
 \value{\code{x} (i.e. this operator always returns the object on
 the left-hand-side)}
