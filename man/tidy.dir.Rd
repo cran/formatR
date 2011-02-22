@@ -1,7 +1,8 @@
 \name{tidy.dir}
 \alias{tidy.dir}
-\title{Format the R scripts under a directory.}
+\title{Format the R scripts under a directory}
 \usage{tidy.dir(path = ".", recursive = FALSE, ...)
+
 }
 \description{Format the R scripts under a directory.}
 \details{This function first look for all the R scripts under a directory

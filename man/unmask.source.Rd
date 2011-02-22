@@ -1,7 +1,8 @@
 \name{unmask.source}
 \alias{unmask.source}
-\title{Restore the real source code from the masked text.}
+\title{Restore the real source code from the masked text}
 \usage{unmask.source(text.mask, replace.tab = FALSE)
+
 }
 \description{Restore the real source code from the masked text.}
 \value{the real source code (a character vector)}
