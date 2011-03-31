@@ -29,12 +29,10 @@ examples below. Note the ``Font'' button is only for the GTK+ interface.}
     
     g = formatR()
     
-    ## we have control over the text widget, e.g. set or get
-    #   the text
+    ## we have control over the text widget, e.g. set or get the text
     
-    svalue(g) = c("# a single line of comments is preserved", 
-        "1+1", "if(TRUE){", paste("x=1 ", "# comments begin with at least 2 spaces!"), 
-        "}else{", "x=2;print('Oh no... ask the right bracket to go away!')}", 
+    svalue(g) = c("# a single line of comments is preserved", "1+1", "if(TRUE){", paste("x=1 ", 
+        "# comments begin with at least 2 spaces!"), "}else{", "x=2;print('Oh no... ask the right bracket to go away!')}", 
         "1*3 # this comment will be dropped!")
     
     ## click 'Convert' now, and see
