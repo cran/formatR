@@ -1,10 +1,12 @@
 \name{tidy.source}
 \alias{tidy.source}
-\title{`Tidy up' R code and try to preserve comments}
-\usage{tidy.source(source = "clipboard", keep.comment, keep.blank.line, keep.space, output = TRUE, 
-    text, width.cutoff = 0.75 * getOption("width"), ...)
+\title{`Tidy up' R code while preserving comments}
+\usage{tidy.source(source = "clipboard", keep.comment, keep.blank.line, 
+    keep.space, replace.assign, output = TRUE, text, width.cutoff = 0.75 * 
+        getOption("width"), ...)
 
 }
+
 
 \description{
 This function has nothing to do with code optimization; it just
@@ -21,34 +23,25 @@ comments in the source code:
 \preformatted{  # asdf}
 
 It will be first masked as
-\preformatted{.SOME_IDENTIFIER = "  # asdf.ANOTHER_IDENTIFIER"}
+\preformatted{.SOME_IDENTIFIER <- "  # asdf.ANOTHER_IDENTIFIER"}
 
 which is a legal R expression, so \code{\link[base]{parse}} can
 deal with it and will no longer remove the disguised comments.
 In the end the identifiers will be removed to restore the original
-comments, i.e. the strings \code{'.SOME_IDENTIFIER = "'} and
+comments, i.e. the strings \code{'.SOME_IDENTIFIER <- "'} and
 \code{'.ANOTHER_IDENTIFIER"'} are replaced with empty strings.
 
-``Inline'' comments are identified as ``two or more spaces'' plus
-the hash symbol \code{#} without any following double quotes in
-the line, e.g.
+``Inline'' comments are handled differently: two spaces will be added
+before the hash symbol \code{#}, e.g.
+\preformatted{1+1#  comments}
+
+will become
 \preformatted{1+1  #  comments}
-
-or
-\preformatted{1+1    # comments}
-
-This might be dangerous to your source code, for instance,
-\preformatted{a = 'I am a string   #yes'}
-
-does not contain comments (\code{#} is inside a string), but this
-function will treat it as if it does! If you need to use the hash
-symbol in a string, you must put it in double quotes, e.g.
-\preformatted{a = "I am a string   #yes"}
 
 Inline comments are first disguised as a weird operation with its
 preceding R code, which is essentially meaningless but
 syntactically correct!  For example,
-\preformatted{1+1 \%InLiNe_IdEnTiFiEr\% "   # comments"}
+\preformatted{1+1 \%InLiNe_IdEnTiFiEr\% "#  comments"}
 
 then \code{\link[base]{parse}} will deal with this expression;
 again, the disguised comments will not be removed. In the end,
@@ -63,38 +56,45 @@ code as a character vector.} \item{text.mask}{The code containing
 comments, which are masked in assignments or with the weird
 operator.}  \item{begin.comment,end.comment}{ identifiers used to
 mark the comments }}
-\note{When \code{keep.comment == TRUE}, \emph{you must not use
-double quotes in your inline comments -- only single quotes are
-allowed!!} For example, the code below will make the function
-discard the comments:
+\note{When \code{keep.comment == TRUE}, \emph{all your double
+quotes in the comments will be replaced by single quotes!!} For
+example,
 \preformatted{1 + 1  # here is the "comment"}
 
-Instead, you have to write like this to protect the comments:
+will become
 \preformatted{1 + 1  # here is the 'comment'}
 
 There are hidden options which can control the behaviour of this
 function: the argument \code{keep.comment} gets its value from
 \code{options('keep.comment')} by default;  \code{keep.blank.line}
-from \code{options('keep.blank.line')}, and \code{keep.space} from
-\code{options('keep.space')}. If these options are \code{NULL},
-the default values will be \code{TRUE}, \code{FALSE} and
-\code{FALSE} respectively.
+from \code{options('keep.blank.line')}, \code{keep.space} from
+\code{options('keep.space')}, and \code{replace.assign} from
+\code{options('replace.assign')}. If these options are
+\code{NULL}, the default values will be \code{TRUE}, \code{FALSE},
+\code{FALSE} and \code{FALSE} respectively.
 
 Also note that if \code{keep.space} is \code{FALSE}, single lines
 of long comments will be wrapped into shorter ones automatically.
 Otherwise, long comments will not be wrapped, so they may exceed
 the page margin, and \code{\\\\t} will be replaced with
-\code{\\t}.
+\code{\\t}. Roxygen comments will not be wrapped in any case.
 
 \subsection{Warning}{ The best strategy to avoid failure is to put
 comments in whole lines or after \emph{complete} R
 expressions. Here are some examples which could make
 \code{\link{tidy.source}} fail:
-\preformatted{if (TRUE) {  ## comments right after a curly brace } }
-
 \preformatted{1 + 2 +   ## comments after an incomplete line
-
 3 + 4}
+
+And the comments right after the curly brace will be moved to the
+next line, e.g.
+\preformatted{if (TRUE) {  ## comments right after a curly brace
+}}
+
+will become
+\preformatted{if (TRUE) {
+## comments right after a curly brace
+}}
 
 }}
 \author{Yihui Xie <\url{http://yihui.name}> with substantial
@@ -113,6 +113,8 @@ not? (\code{TRUE} by default)}
 or not? (\code{FALSE} by default)}
 \item{keep.space}{logical: whether to preserve the leading spaces
 in the single lines of comments (default \code{FALSE})}
+\item{replace.assign}{logical: whether to replace the assign
+operator \code{=} with \code{<-}}
 \item{output}{output to the console or a file using
 \code{\link[base]{cat}}?}
 \item{text}{an alternative way to specify the input: if it is
@@ -131,12 +133,16 @@ scripts, e.g. \code{tidy.source(source = 'input.R', file =
 \examples{library(formatR)
 
 ## use the 'text' argument
-src = c("    # a single line of comments is preserved", "1+1", "  ", "if(TRUE){", 
-    "x=1  # comments begin with at least 2 spaces!", "}else{", "x=2;print('Oh no... ask the right bracket to go away!')}", 
-    "1*3 # this comment will be dropped!", "2+2+2    # 'short comments'", "   ", "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments", 
-    "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line", "\t\t## tabs/spaces before comments: use keep.space=TRUE to keep them", 
+src = c("    # a single line of comments is preserved", 
+    "1+1", "  ", "if(TRUE){", "x=1  # inline comments", "}else{", 
+    "x=2;print('Oh no... ask the right bracket to go away!')}", 
+    "1*3 # one space before this comment will become two!", "2+2+2    # 'short comments'", 
+    "   ", "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments", 
+    "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line", 
+    "\t\t## tabs/spaces before comments: use keep.space=TRUE to keep them", 
     "'a character string with \t in it'", "# note tabs will be converted to spaces when keep.space = TRUE", 
-    paste("## here is a", paste(rep("long", 20), collapse = " "), "comment"))
+    paste("## here is a", paste(rep("long", 20), collapse = " "), 
+        "comment"))
 
 ## source code
 cat(src, sep = "\n")
@@ -158,7 +164,8 @@ tidy.source(text = src, output = FALSE)$text.mask
 
 
 ## tidy up the source code of image demo
-x = file.path(system.file(package = "graphics"), "demo", "image.R")
+x = file.path(system.file(package = "graphics"), "demo", 
+    "image.R")
 
 # to console
 tidy.source(x)
