@@ -1,16 +1,23 @@
 \name{unmask.source}
 \alias{unmask.source}
 \title{Restore the real source code from the masked text}
-\usage{unmask.source(text.mask, replace.tab = FALSE)
+\usage{
+unmask.source(text.mask, replace.tab = FALSE)
+}
+\arguments{
+  \item{text.mask}{the masked source code}
 
+  \item{replace.tab}{whether to replace \code{\\\\t} with
+  \code{\\t}}
 }
-\description{Restore the real source code from the masked text.}
-\value{the real source code (a character vector)}
-\author{Yihui Xie <\url{http://yihui.name}>}
-\arguments{\item{text.mask}{the masked source code}
-\item{replace.tab}{whether to replace \code{\\\\t} with \code{\\t}}
+\value{
+  the real source code (a character vector)
 }
-\examples{library(formatR)
+\description{
+  Remove the masks from the code to restore the real code.
+}
+\examples{
+library(formatR)
 
 src = c("    # a single line of comments is preserved", 
     "1+1", "  ", "if(TRUE){", "x=1  # inline comments!", "}else{", 
@@ -20,20 +27,10 @@ src = c("    # a single line of comments is preserved",
 
 x = tidy.source(text = src, output = FALSE)$text.mask
 
-cat(x, sep = "\n")
+cat(x, sep = "\\n")
 
-cat(unmask.source(x), sep = "\n")}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+cat(unmask.source(x), sep = "\\n")
+}
+\author{
+  Yihui Xie <\url{http://yihui.name}>
+}
