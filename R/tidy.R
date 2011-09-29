@@ -102,13 +102,23 @@
 ##' \code{\\t}. Roxygen comments will not be wrapped in any case.
 ##'
 ##' @section Warning: The best strategy to avoid failure is to put
-##' comments in whole lines or after \emph{complete} R
+##' comments in complete lines or after \emph{complete} R
 ##' expressions. Here are some examples which could make
 ##' \code{\link{tidy.source}} fail:
 ##'
 ##' \preformatted{1 + 2 +## comments after an incomplete line
 ##'
 ##'   3 + 4}
+##'
+##' The same is true for blank lines, e.g.
+##'
+##' \preformatted{
+##' if (TRUE)
+##'
+##' {'this is a BAD style of R programming!'}
+##' }
+##'
+##' There should not be a blank line after the \code{if} statement.
 ##'
 ##' And the comments right after the curly brace will be moved to the
 ##' next line, e.g.
@@ -132,69 +142,7 @@
 ##' \url{http://yihui.name/en/2010/04/formatr-farewell-to-ugly-r-code/}
 ##' @keywords IO
 ##' @export
-##' @examples
-##' library(formatR)
-##'
-##' ## use the 'text' argument
-##' src = c("    # a single line of comments is preserved",
-##' '1+1', '  ', 'if(TRUE){',
-##' "x=1  # inline comments", '}else{',
-##' "x=2;print('Oh no... ask the right bracket to go away!')}",
-##' '1*3 # one space before this comment will become two!',
-##' "2+2+2    # 'short comments'", "   ",
-##' "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments",
-##' "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line",
-##' "\t\t## tabs/spaces before comments: use keep.space=TRUE to keep them",
-##' "'a character string with \t in it'",
-##' "# note tabs will be converted to spaces when keep.space = TRUE",
-##' paste("## here is a", paste(rep("long", 20), collapse = ' '), "comment"))
-##'
-##' ## source code
-##' cat(src, sep = '\n')
-##'
-##' ## the formatted version
-##' tidy.source(text = src)
-##'
-##' ## other options: preserve leading spaces
-##' tidy.source(text = src, keep.space = TRUE)
-##'
-##' ## preserve blank lines
-##' tidy.source(text = src, keep.blank.line = TRUE)
-##'
-##' ## discard comments!
-##' tidy.source(text = src, keep.comment = FALSE)
-##'
-##' ## wanna see the gory truth??
-##' tidy.source(text = src, output = FALSE)$text.mask
-##'
-##'
-##' ## tidy up the source code of image demo
-##' x = file.path(system.file(package = "graphics"), "demo", "image.R")
-##'
-##' # to console
-##' tidy.source(x)
-##'
-##' # to a file
-##' f = tempfile()
-##' tidy.source(x, keep.blank.line = TRUE, file = f)
-##'
-##' ## check the original code here and see the difference
-##' file.show(x)
-##' file.show(f)
-##'
-##' ## use global options
-##' options(keep.comment = TRUE, keep.blank.line = FALSE)
-##' tidy.source(x)
-##'
-##' ## if you've copied R code into the clipboard
-##' if (interactive()) {
-##' tidy.source("clipboard")
-##' ## write into clipboard again
-##' tidy.source("clipboard", file = "clipboard")
-##' }
-##'
-##' ## the if-else structure
-##' tidy.source(text=c('{if(TRUE)1 else 2; if(FALSE){1+1',"## comments",'} else 2}'))
+##' @example inst/examples/tidy.source.R
 tidy.source = function(source = "clipboard", keep.comment,
     keep.blank.line, keep.space, replace.assign, output = TRUE, text = NULL,
     width.cutoff = 0.75 * getOption("width"), ...) {
@@ -202,10 +150,9 @@ tidy.source = function(source = "clipboard", keep.comment,
         if (source == "clipboard" && Sys.info()["sysname"] == "Darwin") {
             source = pipe("pbpaste")
         }
-        text.lines = readLines(source, warn = FALSE)
-    } else {
-        text.lines = text
+        text = readLines(source, warn = FALSE)
     }
+    text.lines = text
     if (identical(text.lines, '')) {
         if (output) cat('\n', ...)
         return('')
@@ -243,6 +190,7 @@ tidy.source = function(source = "clipboard", keep.comment,
             text.lines[head.comment] = gsub("\"", "'", text.lines[head.comment])
             text.lines[head.comment] = gsub("\\", "\\\\", text.lines[head.comment], fixed = TRUE)
         }
+        m = seq_along(text.lines) # map between new row indices to old indices
         ## wrap long comments if you do not want to preserve leading spaces
         if (!keep.space) {
             ## don't wrap roxygen comments
@@ -255,6 +203,7 @@ tidy.source = function(source = "clipboard", keep.comment,
                 if (length(tmp) > 1) {
                     text.lines[j] = tmp[1]
                     text.lines = append(text.lines, tmp[-1], j)
+                    m = append(m, rep(j, length(tmp) - 1), j)
                 }
                 k = k + length(tmp) - 1
             }
@@ -263,12 +212,34 @@ tidy.source = function(source = "clipboard", keep.comment,
         text.lines[head.comment] = sprintf("%s<-\"%s%s\"",
                 begin.comment, text.lines[head.comment], end.comment)
         blank.line = grepl('^[[:space:]]*$', text.lines)
-        if (any(blank.line) && isTRUE(keep.blank.line))
+        if (any(blank.line) && isTRUE(keep.blank.line)) {
+            ## no blank lines before an 'else' statement!
+            else.line = grep('^[[:space:]]*else(\\W|)', text.lines)
+            for (i in else.line) {
+                j = i - 1
+                while (blank.line[j]) {
+                    blank.line[j] = FALSE; j = j - 1  # search backwards & rm blank lines
+                }
+            }
             text.lines[blank.line] = sprintf("%s<-\"%s\"", begin.comment, end.comment)
+        }
         ## replace end-of-line comments to cheat R
         enc = options(encoding = "native.enc")
-        out = attr(parser(text = text.lines), 'data')
+        out = try(attr(parser(text = text.lines), 'data'), silent = TRUE)
         options(enc)
+        if (inherits(out, 'try-error')) {
+            ## line number where errors occur
+            n = as.numeric(tail(strsplit(strsplit(out, '\n')[[1]][2], ':')[[1]], 2)[1])
+            r = (-3:3) + m[n]; r = r[r > 0 & r <= length(text)]
+            s = paste(rep('#', .75 * getOption('width')), collapse = '')
+            message('Unable to parse the R code! ',
+                    'The error is likely to come from line ', m[n],
+                    '; \nthe surrounding lines are:\n', s, '\n',
+                    paste(text[r], collapse = '\n'), '\n', s, '\n',
+                    'See the Warning section in help(tidy.source) for possible reasons',
+                    '\n')
+            stop(out)
+        }
         out = subset(out, out$terminal)
         if (nrow(out) > 0) {
             if (replace.assign) {
@@ -287,8 +258,7 @@ tidy.source = function(source = "clipboard", keep.comment,
         }
         text.mask = tidy.block(text.lines)
         text.tidy = unmask.source(text.mask, replace.tab = keep.space)
-    }
-    else {
+    } else {
         text.tidy = text.mask = tidy.block(text.lines)
         begin.comment = end.comment = ""
     }
