@@ -18,16 +18,16 @@
 ##' @author Yihui Xie <\url{http://yihui.name}>
 ##' @seealso \code{\link{tidy.source}}
 ##' @export
-##' @references
-##' \url{http://yihui.name/en/2010/04/formatr-farewell-to-ugly-r-code/}
-##' @examples
-##' if (interactive() && require('gWidgetsRGtk2')) {
+##' @references \url{https://github.com/yihui/formatR/wiki/}
+##' (screenshots)
+##' @examples \dontrun{
+##' library('gWidgetsRGtk2')
 ##'
 ##' ## a GUI will show up on loading if one of the gWidgets
 ##' ##   toolkit is present (e.g. via library(gWidgetsRGtk2))
 ##' library(formatR)
 ##'
-##' g = formatR()
+##' g = tidy.gui()
 ##'
 ##' ## we have control over the text widget, e.g. set or get the text
 ##'
@@ -42,10 +42,10 @@
 ##' cat(svalue(g), sep = '\n')   # get its value
 ##'
 ##' ## tcl/tk interface: need gWidgetstcltk package
-##' formatR('tcltk')
+##' tidy.gui('tcltk')
 ##'
 ##' }
-formatR = function(guiToolkit = 'RGtk2') {
+tidy.gui = function(guiToolkit = 'RGtk2') {
     options(guiToolkit = guiToolkit)
     stopifnot(require(paste('gWidgets', guiToolkit, sep = ''), character.only = TRUE))
 
