@@ -106,6 +106,7 @@
 ##' @references \url{https://github.com/yihui/formatR/wiki/} (an
 ##' introduction to this package, with examples and further notes)
 ##' @keywords IO
+##' @importFrom parser parser
 ##' @export
 ##' @example inst/examples/tidy.source.R
 tidy.source = function(source = "clipboard", keep.comment,
@@ -271,7 +272,6 @@ unmask.source = function(text.mask, replace.tab = FALSE) {
 ##' This operator is almost meaningless; it is used to mask the inline
 ##' comments.
 ##'
-##' @name \%InLiNe_IdEnTiFiEr\%
 ##' @rdname InLiNe_IdEnTiFiEr
 ##' @usage x %InLiNe_IdEnTiFiEr% y
 ##' @param x the argument before the operator
