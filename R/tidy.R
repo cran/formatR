@@ -105,6 +105,9 @@
 ##' \code{\link[base]{cat}}
 ##' @references \url{https://github.com/yihui/formatR/wiki/} (an
 ##' introduction to this package, with examples and further notes)
+##'
+##' The package vignette also contains some examples (see
+##' \code{vignette('formatR', package = 'formatR')}.
 ##' @keywords IO
 ##' @importFrom parser parser
 ##' @export
@@ -194,7 +197,7 @@ tidy.source =
                     'The error most likely came from line ', m[n],
                     '; \nthe surrounding lines are:\n', s, '\n',
                     paste(text[r], collapse = '\n'), '\n', s, '\n',
-                    'See the Warning section in help(tidy.source) for possible reasons',
+                    'See the reference in help(tidy.source) for possible reasons',
                     '\n')
             stop(out)
         }
