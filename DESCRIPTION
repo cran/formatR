@@ -1,8 +1,8 @@
 Package: formatR
 Type: Package
 Title: Format R Code Automatically
-Version: 0.4
-Date: 2012-04-02
+Version: 0.5
+Date: 2012-06-22
 Author: Yihui Xie
 Maintainer: Yihui Xie <xie@yihui.name>
 Description: This package provides a function tidy.source() and
@@ -11,12 +11,11 @@ Description: This package provides a function tidy.source() and
         code automatically, and comments will be preserved under
         certain conditions, so that R code will be more human-readable
         and tidy.
-Imports: parser (>= 0.0-14)
 Suggests: gWidgetsRGtk2, knitr
 License: GPL-2 | GPL-3
 URL: https://github.com/yihui/formatR/wiki
 BugReports: https://github.com/yihui/formatR/issues
-Collate: 'tidy.R' 'GUI.R' 'usage.R' 'zzz.R' 'eval.R'
-Packaged: 2012-04-02 07:02:24 UTC; yihui
+Collate: 'tidy.R' 'GUI.R' 'usage.R' 'zzz.R' 'eval.R' 'utils.R'
+Packaged: 2012-06-22 00:56:54 UTC; yihui
 Repository: CRAN
-Date/Publication: 2012-04-02 07:22:06
+Date/Publication: 2012-06-22 05:42:43

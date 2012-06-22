@@ -47,7 +47,6 @@
 #'   
 #'   Hadley's style guide: \url{https://github.com/hadley/devtools/wiki/Style}
 #' @keywords IO
-#' @importFrom parser parser
 #' @export
 #' @example inst/examples/tidy.source.R
 tidy.source = function(source = "clipboard", keep.comment = getOption('keep.comment', TRUE),
@@ -99,43 +98,9 @@ tidy.source = function(source = "clipboard", keep.comment = getOption('keep.comm
       }
       text.lines[blank.line] = sprintf('invisible("%s%s")', begin.comment, end.comment)
     }
-    ## replace end-of-line comments to cheat R
-    enc = options(encoding = "native.enc")
-    out = try(attr(parser(text = text.lines), 'data'), silent = TRUE)
-    options(enc)
-    if (inherits(out, 'try-error')) {
-      m = seq_along(text.lines)
-      ## line number where errors occur
-      n = as.numeric(tail(strsplit(strsplit(out, '\n')[[1]][2], ':')[[1]], 2)[1])
-      if (n > length(m)) n = length(m)
-      r = (-3:3) + m[n]; r = r[r > 0 & r <= length(text)]
-      s = paste(rep('#', .75 * getOption('width')), collapse = '')
-      message('Unable to parse the R code! ',
-              'The error most likely came from line ', m[n],
-              '; \nthe surrounding lines are:\n', s, '\n',
-              paste(text[r], collapse = '\n'), '\n', s, '\n',
-              'See the reference in help(tidy.source) for possible reasons',
-              '\n')
-      stop(out)
-    }
-    out = subset(out, out$terminal)
-    if (nrow(out) > 0) {
-      if (replace.assign) {
-        out$text[out$token.desc=='EQ_ASSIGN'] = '<-'
-      }
-      ## is inline comment?
-      idx1 = c(FALSE, diff(out$line1)==0) & (out$token.desc=='COMMENT')
-      ## is last line '{'?
-      idx2 = c(FALSE, (out$text == '{')[-length(idx1)])
-      out$text[idx1] = gsub('"', "'", out$text[idx1])
-      idx = idx1 & (!idx2)
-      out$text[idx] = sprintf(' %%InLiNe_IdEnTiFiEr%% "%s"', out$text[idx])
-      idx = idx1 & idx2
-      out$text[idx] = sprintf('invisible("%s%s%s")', begin.comment, out$text[idx], end.comment)
-      text.lines = tapply(out$text, out$line1, paste, collapse=' ')
-    }
+    text.lines = mask.inline(text.lines, replace.assign, begin.comment, end.comment)
     text.mask = tidy.block(text.lines, width.cutoff)
-    text.tidy = unmask.source(text.mask, replace.tab = keep.space)
+    text.tidy = unmask.source(text.mask)
   } else {
     text.mask = tidy.block(text.lines, width.cutoff)
     text.tidy = unlist(strsplit(text.mask, '\n', fixed = TRUE))
@@ -159,34 +124,10 @@ tidy.block = function(text, width) {
   res
 }
 
-# reflow comments (including roxygen comments)
-reflow.comments = function(text, idx = grepl('^\\s*#+', text), width = getOption('width')) {
-  r = rle(idx)$lengths; flag = idx[1] # code and comments alternate in text
-  unlist(lapply(split(text, rep(seq(length(r)), r)), function(x) {
-    if (flag) {
-      b = sub("^\\s*(#+)('?).*", '\\1\\2 ', x[1])
-      x = paste(b, paste(gsub("^\\s*(#+)('?)", '', x), collapse = '\n'))
-      x = strwrap(x, width = width, prefix = b, initial = '')
-    }
-    flag <<- !flag
-    x
-  }), use.names = FALSE)
-}
-
-# reindent lines with a different number of spaces
-reindent.lines = function(text, n = 2) {
-  if (n == 4) return(text)  # no need to do anything
-  s = paste(rep(' ', n), collapse = '')
-  t1 = gsub('^( *)(.*)', '\\1', text)
-  t2 = gsub('^( *)(.*)', '\\2', text)
-  paste(gsub(' {4}', s, t1), t2, sep = '')
-}
-
 #' Restore the real source code from the masked text
 #'
 #' Remove the masks from the code to restore the real code.
 #' @param text.mask the masked source code
-#' @param replace.tab whether to replace \code{\\\\t} with \code{\\t}
 #' @return the real source code (a character vector)
 #' @author Yihui Xie <\url{http://yihui.name}>
 #' @export
@@ -207,7 +148,7 @@ reindent.lines = function(text, n = 2) {
 #' cat(x, sep = '\n')
 #'
 #' cat(unmask.source(x), sep = '\n')
-unmask.source = function(text.mask, replace.tab = FALSE) {
+unmask.source = function(text.mask) {
   ## if the comments were separated into the next line, then remove '\n' after
   ##   the identifier first to move the comments back to the same line
   text.mask = gsub("%InLiNe_IdEnTiFiEr%[ ]*\n", "%InLiNe_IdEnTiFiEr%", text.mask)
@@ -219,7 +160,6 @@ unmask.source = function(text.mask, replace.tab = FALSE) {
   text.tidy = gsub('invisible\\("\\.BeGiN_TiDy_IdEnTiFiEr_HaHaHa|\\.HaHaHa_EnD_TiDy_IdEnTiFiEr"\\)', 
                    '', text.mask)
   text.tidy = gsub(' %InLiNe_IdEnTiFiEr%[ ]*"([ ]*#[^"]*)"', "  \\1", text.tidy)
-  if (replace.tab) gsub('\\\\t', '\t', text.tidy) else text.tidy
 }
 
 
@@ -279,7 +219,7 @@ unmask.source = function(text.mask, replace.tab = FALSE) {
 #' '1+1', '  ', 'if(TRUE){',
 #' "x=1  # comments begin with at least 2 spaces!", '}else{',
 #' "x=2;print('Oh no... ask the right bracket to go away!')}",
-#' '1*3 # this comment will be dropped!',
+#' "1*3 # this comment will be dropped!",
 #' "2+2+2    # 'short comments'",
 #' "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments",
 #' "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line")
