@@ -10,7 +10,7 @@
 #'   output is printed on screen
 #' @param prefix the prefix to mask the output
 #' @param envir the environment in which to evaluate the code (by default the 
-#'   global environment; if we do not want to mess up with the global 
+#'   parent environment; if we do not want to mess up with the parent
 #'   environment, we can set \code{envir = NULL} or \code{envir = new.env()})
 #' @return Evaluated R code with corresponding output (printed on screen or 
 #'   written in a file).
@@ -23,10 +23,10 @@
 #' 
 #' ## evaluate a file
 #' tidy.eval(source = file.path(system.file(package = "stats"), "demo", "nlm.R"), keep.blank.line = TRUE)
-tidy.eval = function(source = 'clipboard', ..., file = "", prefix = "## ", envir = globalenv()) {
+tidy.eval = function(source = 'clipboard', ..., file = "", prefix = "## ", envir = parent.frame()) {
   txt = tidy.source(source, ..., output = FALSE)$text.mask
   for(i in 1:length(txt)) {
-    cat(unmask.source(txt[i]), '\n', file = file, append = TRUE)
+    cat(unmask.source(txt[i]), sep = '\n', file = file, append = TRUE)
     res = capture.output(eval(parse(text = txt[i]), envir = envir))
     if (length(res)) {
       cat(paste(prefix, res, sep = ''), sep = '\n', file = file, append = TRUE)
