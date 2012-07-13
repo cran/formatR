@@ -205,7 +205,7 @@ usage(tidy.source, width = .73)
 \end_layout
 
 \begin_layout Standard
-There are five options which can affect the output: 
+There are six options which can affect the output: 
 \family typewriter
 keep.comment
 \family default
@@ -220,6 +220,10 @@ keep.space
 , 
 \family typewriter
 reindent.spaces
+\family default
+, 
+\family typewriter
+left.brace.newline
 \family default
  and 
 \family typewriter
@@ -241,12 +245,12 @@ status open
 
 \begin_layout Plain Layout
 
-<<setup>>=
+<<setup, eval=FALSE>>=
 \end_layout
 
 \begin_layout Plain Layout
 
-options(keep.blank.line = TRUE) # not really need to do so; default is TRUE
+options(keep.blank.line = FALSE)
 \end_layout
 
 \begin_layout Plain Layout
@@ -279,7 +283,7 @@ status open
 
 \begin_layout Plain Layout
 
-options(width = 85)
+options(width = 80)
 \end_layout
 
 \begin_layout Plain Layout
@@ -324,6 +328,11 @@ src = c("    ## comments retained; comment block reflowed;",
 
     "    # use keep.space = TRUE to keep spaces before comments and stop
  reflowing", 
+\end_layout
+
+\begin_layout Plain Layout
+
+    "#' roxygen comments will not be wrapped in any case",
 \end_layout
 
 \begin_layout Plain Layout
@@ -423,7 +432,7 @@ status open
 
 \begin_layout Plain Layout
 
-tidy.source(text = src[1:7], replace.assign=TRUE)
+tidy.source(text = src[1:8], replace.assign=TRUE)
 \end_layout
 
 \begin_layout Plain Layout
@@ -451,7 +460,7 @@ status open
 
 \begin_layout Plain Layout
 
-tidy.source(text = src[1:2], keep.space = TRUE)
+tidy.source(text = src[1:4], keep.space = TRUE)
 \end_layout
 
 \begin_layout Plain Layout
@@ -479,7 +488,7 @@ status open
 
 \begin_layout Plain Layout
 
-## note the 10th line (an empty line) was discarded
+## note the 11th line [an empty line] was discarded
 \end_layout
 
 \begin_layout Plain Layout
@@ -513,6 +522,34 @@ status open
 \begin_layout Plain Layout
 
 tidy.source(text = src, reindent.spaces = 2)
+\end_layout
+
+\begin_layout Plain Layout
+
+@
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Move left braces { to new lines
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+<<left-brace-newline>>=
+\end_layout
+
+\begin_layout Plain Layout
+
+tidy.source(text = src[1:10], left.brace.newline = TRUE)
 \end_layout
 
 \begin_layout Plain Layout
@@ -586,18 +623,18 @@ examples
 \series bold
 roxygen2
 \series default
- is not well-formatted; 
+ is not formatted; 
 \series bold
-pgfSweave
+knitr
 \series default
  
 \begin_inset CommandInset citation
 LatexCommand citep
-key "R-pgfSweave"
+key "R-knitr"
 
 \end_inset
 
- can tidy the Sweave code chunks when the Sweave option 
+ can tidy the Sweave code chunks when the chunk option 
 \family typewriter
 tidy
 \family default
@@ -627,7 +664,18 @@ key "R-knitr"
 \end_inset
 
 .
- The real vignette is in LyX, which can be found here:
+ The real vignette is in LyX, which can be found on Github: 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/yihui/formatR/tree/master/inst/doc
+\end_layout
+
+\end_inset
+
+, and the Rnw source is here:
 \end_layout
 
 \begin_layout Standard
@@ -641,7 +689,7 @@ status open
 
 \begin_layout Plain Layout
 
-system.file('doc', 'formatR.lyx', package='formatR')
+system.file('doc', 'formatR.Rnw', package='formatR')
 \end_layout
 
 \begin_layout Plain Layout
@@ -665,12 +713,41 @@ status collapsed
 
 \begin_layout Plain Layout
 
-https://github.com/yihui/lyx
+http://yihui.name/knitr/demo/lyx/
 \end_layout
 
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+<<write-bib, include=FALSE>>=
+\end_layout
+
+\begin_layout Plain Layout
+
+if (require('knitr'))
+\end_layout
+
+\begin_layout Plain Layout
+
+write_bib(c('Rd2roxygen', 'knitr', 'formatR'), file = 'formatR.bib')
+\end_layout
+
+\begin_layout Plain Layout
+
+@
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
