@@ -14,8 +14,6 @@
 #'   \code{tidy.souce()} without specifying the argument \code{source})
 #' @param keep.comment whether to keep comments (\code{TRUE} by default)
 #' @param keep.blank.line whether to keep blank lines (\code{TRUE} by default)
-#' @param keep.space whether to preserve the leading spaces in the single lines
-#'   of comments (default \code{FALSE})
 #' @param replace.assign whether to replace the assign operator \code{=} with
 #'   \code{<-}
 #' @param left.brace.newline whether to put the left brace \code{\{} to a new
@@ -51,43 +49,43 @@
 #' @keywords IO
 #' @export
 #' @example inst/examples/tidy.source.R
-tidy.source = function(source = "clipboard", keep.comment = getOption('keep.comment', TRUE),
-                       keep.blank.line = getOption('keep.blank.line', TRUE),
-                       keep.space = getOption('keep.space', FALSE),
-                       replace.assign = getOption('replace.assign', FALSE),
-                       left.brace.newline = getOption('left.brace.newline', FALSE),
-                       reindent.spaces = getOption('reindent.spaces', 4),
-                       output = TRUE, text = NULL,
-                       width.cutoff = getOption("width"), ...) {
+tidy.source = function(
+  source = "clipboard", keep.comment = getOption('keep.comment', TRUE),
+  keep.blank.line = getOption('keep.blank.line', TRUE),
+  replace.assign = getOption('replace.assign', FALSE),
+  left.brace.newline = getOption('left.brace.newline', FALSE),
+  reindent.spaces = getOption('reindent.spaces', 4),
+  output = TRUE, text = NULL,
+  width.cutoff = getOption("width"), ...
+) {
   if (is.null(text)) {
     if (source == "clipboard" && Sys.info()["sysname"] == "Darwin") {
       source = pipe("pbpaste")
     }
-    text = readLines(source, warn = FALSE)
+  } else {
+    source = textConnection(text); on.exit(close(source))
   }
+  text = readLines(source, warn = FALSE)
   if (length(text) == 0L || all(grepl('^\\s*$', text))) {
     if (output) cat('\n', ...)
     return(list(text.tidy = '', text.mask = ''))
   }
   text.lines = text
   if (keep.comment) {
-    if (!keep.space) text.lines = gsub("^[[:space:]]+|[[:space:]]+$", "", text.lines)
-    head.comment = grepl('^[[:space:]]*#', text.lines)
-    if (any(head.comment)) {
-      text.lines[head.comment] = gsub('"', "'", text.lines[head.comment])
-    }
-    ## wrap long comments if you do not want to preserve leading spaces
-    if (!keep.space) {
-      head.comment = head.comment & !grepl("^\\s*#+'", text.lines)
-      text.lines = reflow_comments(text.lines, head.comment, width.cutoff)
-      head.comment = grepl('^[[:space:]]*#', text.lines)
-    }
+    text.lines = gsub("^\\s+|\\s+$", "", text.lines)
+    text.lines = gsub('\\\\', '\\\\\\\\', text.lines)
+    head.comment = grepl('^\\s*#', text.lines)
+    text.lines[head.comment] = gsub('"', "'", text.lines[head.comment])
+    ## wrap long comments
+    head.comment = head.comment & !grepl("^\\s*#+'", text.lines)
+    text.lines = reflow_comments(text.lines, head.comment, width.cutoff)
+    head.comment = grepl('^\\s*#', text.lines)
     text.lines[head.comment] =
       sprintf('invisible("%s%s%s")', begin.comment, text.lines[head.comment], end.comment)
-    blank.line = grepl('^[[:space:]]*$', text.lines)
+    blank.line = grepl('^\\s*$', text.lines)
     if (any(blank.line) && keep.blank.line) {
       ## no blank lines before an 'else' statement!
-      else.line = grep('^[[:space:]]*else(\\W|)', text.lines)
+      else.line = grep('^\\s*else(\\W|)', text.lines)
       for (i in else.line) {
         j = i - 1
         while (blank.line[j]) {
@@ -103,7 +101,7 @@ tidy.source = function(source = "clipboard", keep.comment = getOption('keep.comm
   text.mask = tidy_block(text.lines, width.cutoff, replace.assign)
   text.tidy = if (keep.comment) unmask.source(text.mask) else text.mask
   text.tidy = reindent_lines(text.tidy, reindent.spaces)
-  if (left.brace.newline) text.tidy = move_leftbrace(text.tidy, reindent.spaces)
+  if (left.brace.newline) text.tidy = move_leftbrace(text.tidy)
   if (output) cat(paste(text.tidy, collapse = "\n"), "\n", ...)
   invisible(list(text.tidy = text.tidy, text.mask = text.mask))
 }
@@ -112,6 +110,7 @@ tidy.source = function(source = "clipboard", keep.comment = getOption('keep.comm
 begin.comment = ".BeGiN_TiDy_IdEnTiFiEr_HaHaHa"
 end.comment = ".HaHaHa_EnD_TiDy_IdEnTiFiEr"
 pat.comment = paste('invisible\\("\\', begin.comment, '|\\', end.comment, '"\\)', sep = '')
+inline.comment = ' %InLiNe_IdEnTiFiEr%[ ]*"([ ]*#[^"]*)"'
 
 # wrapper around parse() and deparse()
 tidy_block = function(text, width = getOption('width'), arrow = FALSE) {
@@ -149,9 +148,13 @@ unmask.source = function(text.mask) {
   ##   the identifier first to move the comments back to the same line
   text.mask = gsub("%InLiNe_IdEnTiFiEr%[ ]*\n", "%InLiNe_IdEnTiFiEr%", text.mask)
   ## move 'else ...' back to the last line
-  text.mask = gsub('\n[[:space:]]*else', ' else', text.mask)
+  text.mask = gsub('\n\\s*else', ' else', text.mask)
+  text.mask = gsub('\\\\\\\\', '\\\\', text.mask)
   text.tidy = gsub(pat.comment, '', text.mask)
-  gsub(' %InLiNe_IdEnTiFiEr%[ ]*"([ ]*#[^"]*)"', "  \\1", text.tidy)
+  # inline comments should be termined by $ or \n
+  text.tidy = gsub(paste(inline.comment, '(\n|$)', sep = ''), "  \\1\\2", text.tidy)
+  # the rest of inline comments should be appended by \n
+  gsub(inline.comment, "  \\1\n", text.tidy)
 }
 
 

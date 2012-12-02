@@ -46,23 +46,26 @@ reflow_comments = function(text, idx = grepl('^\\s*#+', text), width = getOption
 reindent_lines = function(text, n = 2) {
   if (n == 4) return(text)  # no need to do anything
   s = paste(rep(' ', n), collapse = '')
-  unlist(lapply(strsplit(text, '\n', fixed = TRUE), function(x) {
+  unlist(lapply(strsplit(text, '\n'), function(x) {
     t1 = gsub('^( *)(.*)', '\\1', x)
     t2 = gsub('^( *)(.*)', '\\2', x)
     paste(gsub(' {4}', s, t1), t2, sep = '', collapse = '\n')
   }), use.names = FALSE)
 }
 
-# text is the code, n is number of spaces for indentation
-move_leftbrace = function(text, n) {
-  s = paste(rep(' ', n), collapse = '')
-  unlist(lapply(strsplit(text, '\n', fixed = TRUE), function(x) {
-    if (!length(idx <- grep('(\\)|else) \\{$', x))) return(x)
-    # remove first n spaces from the next lines, and use this amount of spaces
-    # for the { lines
-    pre = substring(gsub('^( *)(.*)', '\\1', x[idx + 1L]), n + 1L)
-    x[idx] = mapply(gsub, '(\\)|else) \\{$', paste('\\1\n', pre, '{', sep = ''), x[idx],
-                    USE.NAMES = FALSE)
-    x
+# move { to the next line
+move_leftbrace = function(text) {
+  if (!length(text)) return(text)
+  # the reason to use lapply() here is that text is a vector of source code with
+  # each element being a complete R expression; we do not want to break the
+  # expression structure; same reason for reindent_lines() above
+  unlist(lapply(strsplit(text, '\n'), function(x) {
+    if (length(x) > 1L && length(idx <- grep('(\\)|else) \\{$', x))) {
+      # indent the same amount of spaces as the { lines
+      pre = gsub('^( *)(.*)', '\\1', x[idx])
+      x[idx] = mapply(gsub, '(\\)|else) \\{$', sprintf('\\1\n%s{', pre), x[idx],
+                      USE.NAMES = FALSE)
+    }
+    paste(x, collapse = '\n')
   }), use.names = FALSE)
 }
