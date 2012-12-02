@@ -1,3 +1,26 @@
+		   CHANGES IN formatR VERSION 0.7
+
+BUG FIXES
+
+  o backslashes in whole lines of comments can be correctly retained
+  now (e.g. #' \code{1+1}) (thanks, KAPLAN Bernard)
+
+  o the font button in tidy.gui() works again (#23) (thanks, Dason
+  Kurkiewicz)
+
+  o the option left.brace.newline was buggy; it did not work for empty
+  lines
+
+MAJOR CHANGES
+
+  o the option keep.space in tidy.source() was removed; the spaces
+  before comments will not be faithfully kept
+
+NEW FEATURES
+
+  o the number of spaces for indentation can be specified in
+  tidy.gui()
+
 		   CHANGES IN formatR VERSION 0.6
 
 NEW FEATURES
