@@ -41,26 +41,21 @@
 #'   \code{\link[base]{cat}}
 #' @references \url{https://github.com/yihui/formatR/wiki/} (an introduction to
 #'   this package, with examples and further notes)
-#'
-#'   The package vignette also contains some examples (see
-#'   \code{vignette('formatR', package = 'formatR')}.
-#'
-#'   Hadley's style guide: \url{https://github.com/hadley/devtools/wiki/Style}
 #' @keywords IO
 #' @export
 #' @example inst/examples/tidy.source.R
 tidy.source = function(
-  source = "clipboard", keep.comment = getOption('keep.comment', TRUE),
+  source = 'clipboard', keep.comment = getOption('keep.comment', TRUE),
   keep.blank.line = getOption('keep.blank.line', TRUE),
   replace.assign = getOption('replace.assign', FALSE),
   left.brace.newline = getOption('left.brace.newline', FALSE),
   reindent.spaces = getOption('reindent.spaces', 4),
   output = TRUE, text = NULL,
-  width.cutoff = getOption("width"), ...
+  width.cutoff = getOption('width'), ...
 ) {
   if (is.null(text)) {
-    if (source == "clipboard" && Sys.info()["sysname"] == "Darwin") {
-      source = pipe("pbpaste")
+    if (source == 'clipboard' && Sys.info()['sysname'] == 'Darwin') {
+      source = pipe('pbpaste')
     }
   } else {
     source = textConnection(text); on.exit(close(source))
@@ -68,11 +63,10 @@ tidy.source = function(
   text = readLines(source, warn = FALSE)
   if (length(text) == 0L || all(grepl('^\\s*$', text))) {
     if (output) cat('\n', ...)
-    return(list(text.tidy = '', text.mask = ''))
+    return(list(text.tidy = text, text.mask = text))
   }
   text.lines = text
   if (keep.comment) {
-    text.lines = gsub("^\\s+|\\s+$", "", text.lines)
     text.lines = gsub('\\\\', '\\\\\\\\', text.lines)
     head.comment = grepl('^\\s*#', text.lines)
     text.lines[head.comment] = gsub('"', "'", text.lines[head.comment])
@@ -102,13 +96,13 @@ tidy.source = function(
   text.tidy = if (keep.comment) unmask.source(text.mask) else text.mask
   text.tidy = reindent_lines(text.tidy, reindent.spaces)
   if (left.brace.newline) text.tidy = move_leftbrace(text.tidy)
-  if (output) cat(paste(text.tidy, collapse = "\n"), "\n", ...)
+  if (output) cat(paste(text.tidy, collapse = '\n'), '\n', ...)
   invisible(list(text.tidy = text.tidy, text.mask = text.mask))
 }
 
 ## if you have variable names like this in your code, then you really beat me...
-begin.comment = ".BeGiN_TiDy_IdEnTiFiEr_HaHaHa"
-end.comment = ".HaHaHa_EnD_TiDy_IdEnTiFiEr"
+begin.comment = '.BeGiN_TiDy_IdEnTiFiEr_HaHaHa'
+end.comment = '.HaHaHa_EnD_TiDy_IdEnTiFiEr'
 pat.comment = paste('invisible\\("\\', begin.comment, '|\\', end.comment, '"\\)', sep = '')
 inline.comment = ' %InLiNe_IdEnTiFiEr%[ ]*"([ ]*#[^"]*)"'
 
@@ -119,125 +113,21 @@ tidy_block = function(text, width = getOption('width'), arrow = FALSE) {
   sapply(exprs, function(e) paste(base::deparse(e, width), collapse = '\n'))
 }
 
-#' Restore the real source code from the masked text
-#'
-#' Remove the masks from the code to restore the real code.
-#' @param text.mask the masked source code
-#' @return the real source code (a character vector)
-#' @author Yihui Xie <\url{http://yihui.name}>
-#' @export
-#' @keywords internal
-#' @examples
-#' library(formatR)
-#'
-#' src = c("    # a single line of comments is preserved",
-#' '1+1', '  ', 'if(TRUE){',
-#' "x=1  # inline comments!", '}else{',
-#' "x=2;print('Oh no... ask the right bracket to go away!')}",
-#' "2+2+2    # 'short comments'",
-#' "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments",
-#' "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line")
-#'
-#' x = tidy.source(text = src, output = FALSE)$text.mask
-#'
-#' cat(x, sep = '\n')
-#'
-#' cat(unmask.source(x), sep = '\n')
+# Restore the real source code from the masked text
 unmask.source = function(text.mask) {
   ## if the comments were separated into the next line, then remove '\n' after
   ##   the identifier first to move the comments back to the same line
-  text.mask = gsub("%InLiNe_IdEnTiFiEr%[ ]*\n", "%InLiNe_IdEnTiFiEr%", text.mask)
+  text.mask = gsub('%InLiNe_IdEnTiFiEr%[ ]*\n', '%InLiNe_IdEnTiFiEr%', text.mask)
   ## move 'else ...' back to the last line
   text.mask = gsub('\n\\s*else', ' else', text.mask)
   text.mask = gsub('\\\\\\\\', '\\\\', text.mask)
   text.tidy = gsub(pat.comment, '', text.mask)
   # inline comments should be termined by $ or \n
-  text.tidy = gsub(paste(inline.comment, '(\n|$)', sep = ''), "  \\1\\2", text.tidy)
+  text.tidy = gsub(paste(inline.comment, '(\n|$)', sep = ''), '  \\1\\2', text.tidy)
   # the rest of inline comments should be appended by \n
-  gsub(inline.comment, "  \\1\n", text.tidy)
+  gsub(inline.comment, '  \\1\n', text.tidy)
 }
 
-
-#' A weird operator for internal use only
-#'
-#' This operator is almost meaningless; it is used to mask the inline comments.
-#' @rdname InLiNe_IdEnTiFiEr
-#' @usage x %InLiNe_IdEnTiFiEr% y
-#' @param x the argument before the operator
-#' @param y the argument after the operator
-#' @return \code{x} (i.e. this operator always returns the object on the
-#'   left-hand-side)
-#' @author Yihui Xie <\url{http://yihui.name}>
-#' @seealso \code{\link{tidy.source}}
-#' @export "%InLiNe_IdEnTiFiEr%"
-#' @keywords internal
-#' @examples
-#' ## we can use it with *anything*
-#'
-#' 1 %InLiNe_IdEnTiFiEr% 2
-#'
-#' 1:10 %InLiNe_IdEnTiFiEr% "asdf"
-#'
-#' lm %InLiNe_IdEnTiFiEr% 'garbage'
-#'
-"%InLiNe_IdEnTiFiEr%" <- function(x, y) x
-
-
-#' Modified versions of parse() and deparse()
-#'
-#' These two functions parse and deparse the masked source code.
-#'
-#' For \code{\link{parse.tidy}}, the source code is masked to preserve comments,
-#' then this function uses \code{\link[base]{parse}} to return the parsed but
-#' unevaluated expressions in a list.
-#'
-#' For \code{\link{deparse.tidy}}, it uses \code{\link[base]{deparse}} to turn
-#' the unevaluated (and masked) expressions into character strings; the masks
-#' will be removed to restore the real source code. See
-#' \code{\link{unmask.source}}.
-#' @param text the source code as a character string to be passed to
-#'   \code{\link{tidy.source}}
-#' @param ... for \code{\link{parse.tidy}}: other arguments to be passed to
-#'   \code{\link{tidy.source}}; for \code{\link{deparse.tidy}}: arguments to be
-#'   passed to \code{\link[base]{deparse}}
-#' @return \code{\link{parse.tidy}} returns the unevaluated expressions;
-#'   \code{\link{deparse.tidy}} returns the character strings
-#' @author Yihui Xie <\url{http://yihui.name}>
-#' @note These functions are mainly designed for the package \pkg{pgfSweave};
-#'   they may not be useful to general users.
-#' @seealso \code{\link[base]{parse}}, \code{\link[base]{deparse}},
-#'   \code{\link{tidy.source}}
-#' @export
-#' @keywords internal
-#' @examples
-#' src = c("    # a single line of comments is preserved",
-#' '1+1', '  ', 'if(TRUE){',
-#' "x=1  # comments begin with at least 2 spaces!", '}else{',
-#' "x=2;print('Oh no... ask the right bracket to go away!')}",
-#' "1*3 # this comment will be dropped!",
-#' "2+2+2    # 'short comments'",
-#' "lm(y~x1+x2)  ### only 'single quotes' are allowed in comments",
-#' "1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  ## comments after a long line")
-#'
-#' (expr = parse.tidy(src))
-#'
-#' parse.tidy(src, keep.blank.line = TRUE)
-#'
-#' cat(deparse.tidy(expr))
-#'
-#' deparse.tidy(expr, width.cutoff = 50)
-parse.tidy = function(text, ...) {
-  tidy.res = tidy.source(text = text, output = FALSE, ...)
-  base::parse(text = tidy.res$text.mask)
-}
-#' @param expr the unevaluated expressions (ideally as results from
-#' \code{\link{parse.tidy}})
-#' @rdname parse.tidy
-#' @export
-#' @keywords internal
-deparse.tidy = function(expr, ...) {
-  unmask.source(paste(base::deparse(expr, ...), collapse = '\n'))
-}
 
 #' Format the R scripts under a directory
 #'
