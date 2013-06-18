@@ -1,3 +1,15 @@
+		   CHANGES IN formatR VERSION 0.8
+
+MAJOR CHANGES
+
+  o tidy.source(text = character(0)) returns character(0) instead of ''
+
+  o removed the (dark voodoo) functions parse.tidy() and deparse.tidy() as
+  well as the operator "%InLiNe_IdEnTiFiEr%"; they were designed for the
+  pgfSweave package, which has been archived on CRAN for a long time
+
+  o the function unmask.source() is no longer exported
+
 		   CHANGES IN formatR VERSION 0.7
 
 BUG FIXES
@@ -115,7 +127,7 @@ MAJOR CHANGES
 BUG FIXES
 
   o fixed #16: \\ in comments are preserved correctly now
-  
+
 
 		   CHANGES IN formatR VERSION 0.3-4
 
