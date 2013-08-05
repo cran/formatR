@@ -53,11 +53,7 @@ cat(svalue(g), sep = "\\n")  # get its value
 
 ## tcl/tk interface: need gWidgetstcltk package
 tidy.gui("tcltk")
-
 }
-}
-\author{
-  Yihui Xie <\url{http://yihui.name}>
 }
 \references{
   \url{https://github.com/yihui/formatR/wiki/}

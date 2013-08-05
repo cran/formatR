@@ -1,26 +1,26 @@
 #' Show the usage of a function
-#' 
+#'
 #' Print the reformatted usage of a function. The arguments of the function are
-#' searched by \code{\link[utils]{argsAnywhere}}, so the function can be either
+#' searched by \code{\link{argsAnywhere}}, so the function can be either
 #' exported or non-exported in a package. S3 methods will be marked.
 #' @param FUN the function name
-#' @param width the width of output
+#' @param width the width of output (passed to \code{width.cutoff} in
+#'   \code{\link{tidy.source}})
 #' @return \code{NULL}; the usage is printed on screen
-#' @author Yihui Xie <\url{http://yihui.name}>
 #' @seealso \code{\link{tidy.source}}
 #' @export
 #' @examples library(formatR)
 #' usage(var)
-#' 
+#'
 #' usage(plot)
-#' 
+#'
 #' usage(plot.default)  # default method
 #' usage(plot.lm)  # on the 'lm' class
-#' 
+#'
 #' usage(usage)
-#' 
-#' usage(barplot.default, width = 0.6)  # narrower output
-usage = function(FUN, width = 0.77) {
+#'
+#' usage(barplot.default, width = 60)  # narrower output
+usage = function(FUN, width = getOption('width')) {
   fn = as.character(substitute(FUN))
   res = capture.output(do.call(argsAnywhere, list(fn)))
   if (identical(res, 'NULL')) return()
@@ -44,6 +44,10 @@ usage = function(FUN, width = 0.77) {
   }
   if (!isS3) res[1] = paste(fn, res[1])
   if ((n <- length(res)) > 1 && res[n] == 'NULL') res = res[-n]  # rm last element 'NULL'
-  tidy.res = tidy.source(text = res, output = FALSE, width.cutoff = width * getOption("width"))
+  if (width <= 1) {
+    warning("'width' should no longer be specified as a proportion")
+    width = width * getOption("width")
+  }
+  tidy.res = tidy.source(text = res, output = FALSE, width.cutoff = width)
   cat(tidy.res$text.tidy, sep = '\n')
 }

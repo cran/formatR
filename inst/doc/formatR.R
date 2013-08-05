@@ -1,15 +1,13 @@
 
-## @knitr eval=FALSE
+## ----eval=FALSE----------------------------------------------------------
 ## install.packages('formatR')
 
 
-## @knitr eval=FALSE
-## install.packages('devtools')
-## library(devtools)
-## install_github('formatR', 'yihui')
+## ----eval=FALSE----------------------------------------------------------
+## install.packages('formatR', repos = 'http://rforge.net')
 
 
-## @knitr example, eval=FALSE, tidy=FALSE
+## ----example, eval=FALSE, tidy=FALSE-------------------------------------
 ## ## comments are retained;
 ## # a comment block will be reflowed if it contains long comments;
 ## #' roxygen comments will not be wrapped in any case
@@ -27,7 +25,7 @@
 ## ## here is a long long long long long long long long long long long long long comment which will be wrapped
 
 
-## @knitr example, eval=FALSE, tidy.opts=list(width.cutoff=70)
+## ----example, eval=FALSE, tidy.opts=list(width.cutoff=70)----------------
 ## ## comments are retained;
 ## # a comment block will be reflowed if it contains long comments;
 ## #' roxygen comments will not be wrapped in any case
@@ -45,22 +43,22 @@
 ## ## here is a long long long long long long long long long long long long long comment which will be wrapped
 
 
-## @knitr 
+## ------------------------------------------------------------------------
 library(formatR)
-usage(glm, width=1)  # can set arbitrary width here
+usage(glm, width=70)  # can set arbitrary width here
 args(glm)
 
 
-## @knitr comment=NA
+## ----comment=NA----------------------------------------------------------
 tidy.eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 
 
-## @knitr eval=FALSE
+## ----eval=FALSE----------------------------------------------------------
 ## library(formatR)
 ## tidy.eval()  # without specifying any arguments, it reads code from clipboard
 
 
-## @knitr example, eval=FALSE, echo=6, tidy.opts=list(replace.assign=TRUE)
+## ----example, eval=FALSE, echo=6, tidy.opts=list(replace.assign=TRUE)----
 ## ## comments are retained;
 ## # a comment block will be reflowed if it contains long comments;
 ## #' roxygen comments will not be wrapped in any case
@@ -78,7 +76,7 @@ tidy.eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 ## ## here is a long long long long long long long long long long long long long comment which will be wrapped
 
 
-## @knitr example, eval=FALSE, echo=1:6, tidy.opts=list(keep.blank.line = FALSE)
+## ----example, eval=FALSE, echo=1:6, tidy.opts=list(keep.blank.line = FALSE)----
 ## ## comments are retained;
 ## # a comment block will be reflowed if it contains long comments;
 ## #' roxygen comments will not be wrapped in any case
@@ -96,7 +94,7 @@ tidy.eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 ## ## here is a long long long long long long long long long long long long long comment which will be wrapped
 
 
-## @knitr example, eval=FALSE, echo=6, tidy.opts=list(reindent.spaces = 2)
+## ----example, eval=FALSE, echo=6, tidy.opts=list(reindent.spaces = 2)----
 ## ## comments are retained;
 ## # a comment block will be reflowed if it contains long comments;
 ## #' roxygen comments will not be wrapped in any case
@@ -114,7 +112,7 @@ tidy.eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 ## ## here is a long long long long long long long long long long long long long comment which will be wrapped
 
 
-## @knitr example, eval=FALSE, echo=6, tidy.opts=list(left.brace.newline = TRUE)
+## ----example, eval=FALSE, echo=6, tidy.opts=list(left.brace.newline = TRUE)----
 ## ## comments are retained;
 ## # a comment block will be reflowed if it contains long comments;
 ## #' roxygen comments will not be wrapped in any case
@@ -132,7 +130,7 @@ tidy.eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 ## ## here is a long long long long long long long long long long long long long comment which will be wrapped
 
 
-## @knitr example, eval=FALSE, tidy.opts=list(keep.comment = FALSE)
+## ----example, eval=FALSE, tidy.opts=list(keep.comment = FALSE)-----------
 ## ## comments are retained;
 ## # a comment block will be reflowed if it contains long comments;
 ## #' roxygen comments will not be wrapped in any case
@@ -150,15 +148,17 @@ tidy.eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 ## ## here is a long long long long long long long long long long long long long comment which will be wrapped
 
 
-## @knitr comment-brace, tidy=FALSE, eval=FALSE
+## ----comment-brace, tidy=FALSE, eval=FALSE-------------------------------
 ## if (TRUE) {## comments
 ## }
 
 
-## @knitr comment-brace, eval=FALSE
+## ----comment-brace, eval=FALSE-------------------------------------------
 ## if (TRUE) {## comments
 ## }
 
 
+## ----include=FALSE-------------------------------------------------------
+options(markdown.HTML.header = system.file('misc', 'vignette.css', package='knitr'))
 
 

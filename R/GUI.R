@@ -8,14 +8,12 @@
 #' We can either open an R source file or directly write R code in the text
 #' widget. Click the \samp{convert} button, and the code will become tidy. See
 #' \code{\link{tidy.source}} for more details.
-#'
 #' @param guiToolkit the GUI toolkit to use
 #' @return the text widget is returned
 #' @note By default, the interface is based on GTK+ (R package \pkg{RGtk2}), but
 #'   other options (\pkg{tcltk}, \pkg{rJava} and \bold{Qt}) are possible too.
 #'   See the examples below. Note the \samp{Font} button is only for the GTK+
 #'   interface.
-#' @author Yihui Xie <\url{http://yihui.name}>
 #' @seealso \code{\link{tidy.source}}
 #' @export
 #' @references \url{https://github.com/yihui/formatR/wiki/} (screenshots)
@@ -42,11 +40,10 @@
 #'
 #' ## tcl/tk interface: need gWidgetstcltk package
 #' tidy.gui('tcltk')
-#'
 #' }
 tidy.gui = function(guiToolkit = 'RGtk2') {
   options(guiToolkit = guiToolkit)
-  require(paste('gWidgets', guiToolkit, sep = ''), character.only = TRUE)
+  library(paste('gWidgets', guiToolkit, sep = ''), character.only = TRUE)
 
   g = ggroup(horizontal = FALSE, container = gwindow('Tidy R Source'))
   g1 = ggroup(container = g, expand = TRUE)

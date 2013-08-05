@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- saved from url=(0014)about:internet -->
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -186,7 +185,7 @@ img{display:block;margin:auto;}
 
 <body>
 <!--
-%\VignetteEngine{knitr}
+%\VignetteEngine{knitr::knitr}
 %\VignetteIndexEntry{An Introduction to formatR}
 -->
 
@@ -197,12 +196,12 @@ img{display:block;margin:auto;}
 <pre><code class="r">install.packages(&quot;formatR&quot;)
 </code></pre>
 
-<p>To install the development version from GitHub, use</p>
+<p>To install the latest development version, use</p>
 
-<pre><code class="r">install.packages(&quot;devtools&quot;)
-library(devtools)
-install_github(&quot;formatR&quot;, &quot;yihui&quot;)
+<pre><code class="r">install.packages(&quot;formatR&quot;, repos = &quot;http://rforge.net&quot;)
 </code></pre>
+
+<p>Or check out the <a href="https://github.com/yihui/formatR">Github repository</a> and install from source if you know what this means.</p>
 
 <p>This page is always based on the development version.</p>
 
@@ -258,8 +257,8 @@ if (TRUE) {
 lm(y ~ x1 + x2, data = data.frame(y = rnorm(100), x1 = rnorm(100), x2 = rnorm(100)))  ### a linear model
 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 
     1 + 1 + 1 + 1 + 1  ## comments after a long line
-## here is a long long long long long long long long long long long
-## long long comment which will be wrapped
+## here is a long long long long long long long long long long long long
+## long comment which will be wrapped
 </code></pre>
 
 <p>Two applications of <code>tidy.source()</code>:</p>
@@ -269,7 +268,7 @@ lm(y ~ x1 + x2, data = data.frame(y = rnorm(100), x1 = rnorm(100), x2 = rnorm(10
 <li><p><code>usage()</code> can reformat the usage of a function, e.g. compare <code>usage()</code> with the default output of <code>args()</code>:</p>
 
 <pre><code class="r">library(formatR)
-usage(glm, width = 1)  # can set arbitrary width here
+usage(glm, width = 70)  # can set arbitrary width here
 </code></pre>
 
 <pre><code>## glm(formula, family = gaussian, data, weights, subset, na.action, start = NULL, 
@@ -315,12 +314,12 @@ a  # print the value
 ## [1] 2
 
 matrix(rnorm(10), 5)
-##          [,1]    [,2]
-## [1,]  0.52683  0.4532
-## [2,] -0.14496  1.1329
-## [3,] -0.02106  1.5659
-## [4,] -0.29752 -0.3786
-## [5,]  0.17427 -0.5463
+##         [,1]     [,2]
+## [1,]  0.7882  1.68630
+## [2,]  0.1215 -1.90243
+## [3,] -0.9290  1.58317
+## [4,]  1.2557 -0.10598
+## [5,] -2.3640 -0.05076
 </code></pre>
 
 <p>The default source of the code is from clipboard like <code>tidy.source()</code>, so we can copy our code to clipboard, and simply run this in R:</p>
@@ -424,20 +423,6 @@ x &lt;- 1; # you should not use ; here!
 }
 </code></pre>
 
-<h3>Character strings with # in the beginning of a line</h3>
-
-<pre><code class="r">mod = &quot;1+1
-## comments here can bring troubles
-2+2&quot;
-</code></pre>
-
-<p>We need to write like this:</p>
-
-<pre><code class="r">mod = &quot;1+1\n## comments here can bring troubles\n2+2&quot;
-## or
-mod = paste(&quot;1+1&quot;, &quot;## comments here can bring troubles&quot;, &quot;2+2&quot;, sep = &#39;\n&#39;)
-</code></pre>
-
 <h3>Inappropriate blank lines</h3>
 
 <p>Blank lines are often used to separate complete chunks of R code, and arbitrary blank lines may cause failures in <code>tidy.source()</code> as well when the argument <code>keep.blank.line = TRUE</code>, e.g.</p>
@@ -500,15 +485,6 @@ mod = paste(&quot;1+1&quot;, &quot;## comments here can bring troubles&quot;, &q
 
 <p>All these special treatments to comments are due to the fact that <code>base::parse()</code> and <code>base::deparse()</code> can tidy the R code at the price of dropping all the comments.</p>
 
-<p>Note when <code>keep.comment == TRUE</code>, you <em>must not write double quotes in the inline comments</em> and <em>must write literal <code>#</code> in double quotes</em>!! For example,</p>
-
-<pre><code class="r">1 + 1  # double quotes in &quot;comment&quot; are not allowed
-1 + 1  # here is a legitimate &#39;comment&#39; with single quotes
-
-&quot;a valid character string with # in it&quot;
-&#39;a # in single quotes is not allowed&#39;
-</code></pre>
-
 <h2>8. Global options</h2>
 
 <p>There are global options which can override some arguments in <code>tidy.source()</code>:</p>
@@ -548,6 +524,35 @@ mod = paste(&quot;1+1&quot;, &quot;## comments here can bring troubles&quot;, &q
 </tbody></table>
 
 <p>Also note that single lines of long comments will be wrapped into shorter ones automatically, but roxygen comments will not be wrapped (i.e., comments that begin with <code>#&#39;</code>).</p>
+
+<h2>9. Additional problems for R 2.15.x</h2>
+
+<p>You are strongly recommended to upgrade to R 3.0.x; if you use <code>R &lt; 3.0.0</code>, you will suffer from a few additional problems below.</p>
+
+<h3>Character strings with # in the beginning of a line</h3>
+
+<pre><code class="r">mod = &quot;1+1
+## comments here can bring troubles
+2+2&quot;
+</code></pre>
+
+<p>We need to write like this:</p>
+
+<pre><code class="r">mod = &quot;1+1\n## comments here can bring troubles\n2+2&quot;
+## or
+mod = paste(&quot;1+1&quot;, &quot;## comments here can bring troubles&quot;, &quot;2+2&quot;, sep = &#39;\n&#39;)
+</code></pre>
+
+<h3>Double quotes in comments</h3>
+
+<p>Note when <code>keep.comment == TRUE</code>, you <em>must not write double quotes in the inline comments</em> and <em>must write literal <code>#</code> in double quotes</em>!! For example,</p>
+
+<pre><code class="r">1 + 1  # double quotes in &quot;comment&quot; are not allowed
+1 + 1  # here is a legitimate &#39;comment&#39; with single quotes
+
+&quot;a valid character string with # in it&quot;
+&#39;a # in single quotes is not allowed&#39;
+</code></pre>
 
 </body>
 
