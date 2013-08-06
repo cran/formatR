@@ -1,9 +1,10 @@
 #' Reformat R code while preserving blank lines and comments
 #'
 #' This function returns reformatted source code; it tries to preserve blank
-#' lines and comments, which is different with \code{\link[base]{parse}}. It can
-#' also replace \code{=} with \code{<-} where \code{=} means assignments, and
-#' reindent code by a specified number of spaces (default is 4).
+#' lines and comments, which is different with \code{\link{parse}} and
+#' \code{\link{deparse}}. It can also replace \code{=} with \code{<-} where
+#' \code{=} means assignments, and reindent code by a specified number of spaces
+#' (default is 4).
 #'
 #' This function helps the users to tidy up their source code in a sense that
 #' necessary indents and spaces will be added, but comments will be preserved if
@@ -19,17 +20,17 @@
 #' @param left.brace.newline whether to put the left brace \code{\{} to a new
 #'   line (default \code{FALSE})
 #' @param reindent.spaces number of spaces to indent the code (default 4)
-#' @param output output to the console or a file using \code{\link[base]{cat}}?
+#' @param output output to the console or a file using \code{\link{cat}}?
 #' @param text an alternative way to specify the input: if it is \code{NULL},
 #'   the function will read the source code from the \code{source} argument;
 #'   alternatively, if \code{text} is a character vector containing the source
 #'   code, it will be used as the input and the \code{source} argument will be
 #'   ignored
-#' @param width.cutoff passed to \code{\link[base]{deparse}}: integer in [20,
-#'   500] determining the cutoff at which line-breaking is tried (default to be
+#' @param width.cutoff passed to \code{\link{deparse}}: integer in [20, 500]
+#'   determining the cutoff at which line-breaking is tried (default to be
 #'   \code{getOption("width")})
-#' @param ... other arguments passed to \code{\link[base]{cat}}, e.g.
-#'   \code{file} (this can be useful for batch-processing R scripts, e.g.
+#' @param ... other arguments passed to \code{\link{cat}}, e.g. \code{file}
+#'   (this can be useful for batch-processing R scripts, e.g.
 #'   \code{tidy.source(source = 'input.R', file = 'output.R')})
 #' @return A list with components \item{text.tidy}{the reformatted code as a
 #'   character vector} \item{text.mask}{the code containing comments, which are
@@ -37,11 +38,9 @@
 #' @note Be sure to read the reference to know other limitations.
 #' @author Yihui Xie <\url{http://yihui.name}> with substantial contribution
 #'   from Yixuan Qiu <\url{http://yixuan.cos.name}>
-#' @seealso \code{\link[base]{parse}}, \code{\link[base]{deparse}},
-#'   \code{\link[base]{cat}}
+#' @seealso \code{\link{parse}}, \code{\link{deparse}}, \code{\link{cat}}
 #' @references \url{https://github.com/yihui/formatR/wiki/} (an introduction to
 #'   this package, with examples and further notes)
-#' @keywords IO
 #' @export
 #' @example inst/examples/tidy.source.R
 tidy.source = function(
@@ -65,37 +64,18 @@ tidy.source = function(
     if (output) cat('\n', ...)
     return(list(text.tidy = text, text.mask = text))
   }
-  text.lines = text
-  if (keep.comment) {
-    text.lines = gsub('\\\\', '\\\\\\\\', text.lines)
-    head.comment = grepl('^\\s*#', text.lines)
-    text.lines[head.comment] = gsub('"', "'", text.lines[head.comment])
-    ## wrap long comments
-    head.comment = head.comment & !grepl("^\\s*#+'", text.lines)
-    text.lines = reflow_comments(text.lines, head.comment, width.cutoff)
-    head.comment = grepl('^\\s*#', text.lines)
-    text.lines[head.comment] =
-      sprintf('invisible("%s%s%s")', begin.comment, text.lines[head.comment], end.comment)
-    blank.line = grepl('^\\s*$', text.lines)
-    if (any(blank.line) && keep.blank.line) {
-      ## no blank lines before an 'else' statement!
-      else.line = grep('^\\s*else(\\W|)', text.lines)
-      for (i in else.line) {
-        j = i - 1
-        while (blank.line[j]) {
-          blank.line[j] = FALSE; j = j - 1  # search backwards & rm blank lines
-          warning('removed blank line ', j,
-                  ' (you should not put an \'else\' in a separate line!)')
-        }
-      }
-      text.lines[blank.line] = sprintf('invisible("%s%s")', begin.comment, end.comment)
-    }
-    text.lines = mask_inline(text.lines)
+  if (keep.blank.line && R3) {
+    one = paste(text, collapse = '\n') # record how many line breaks before/after
+    n1 = attr(regexpr('^\n*', one), 'match.length')
+    n2 = attr(regexpr('\n*$', one), 'match.length')
   }
-  text.mask = tidy_block(text.lines, width.cutoff, replace.assign)
+  if (keep.comment) text = mask_comments(text, width.cutoff, keep.blank.line)
+  text.mask = tidy_block(text, width.cutoff, replace.assign)
   text.tidy = if (keep.comment) unmask.source(text.mask) else text.mask
   text.tidy = reindent_lines(text.tidy, reindent.spaces)
   if (left.brace.newline) text.tidy = move_leftbrace(text.tidy)
+  # restore new lines in the beginning and end
+  if (keep.blank.line && R3) text.tidy = c(rep('', n1), text.tidy, rep('', n2))
   if (output) cat(paste(text.tidy, collapse = '\n'), '\n', ...)
   invisible(list(text.tidy = text.tidy, text.mask = text.mask))
 }
@@ -103,24 +83,36 @@ tidy.source = function(
 ## if you have variable names like this in your code, then you really beat me...
 begin.comment = '.BeGiN_TiDy_IdEnTiFiEr_HaHaHa'
 end.comment = '.HaHaHa_EnD_TiDy_IdEnTiFiEr'
-pat.comment = paste('invisible\\("\\', begin.comment, '|\\', end.comment, '"\\)', sep = '')
+pat.comment = sprintf('invisible\\("\\%s|\\%s"\\)', begin.comment, end.comment)
+mat.comment = sprintf('invisible\\("\\%s([^"]*)\\%s"\\)', begin.comment, end.comment)
 inline.comment = ' %InLiNe_IdEnTiFiEr%[ ]*"([ ]*#[^"]*)"'
+blank.comment = sprintf('invisible("%s%s")', begin.comment, end.comment)
 
 # wrapper around parse() and deparse()
 tidy_block = function(text, width = getOption('width'), arrow = FALSE) {
-  exprs = base::parse(text = text, srcfile = NULL)
+  exprs = parse_only(text)
+  if (length(exprs) == 0) return(character(0))
   exprs = if (arrow) replace_assignment(exprs) else as.list(exprs)
   sapply(exprs, function(e) paste(base::deparse(e, width), collapse = '\n'))
 }
 
 # Restore the real source code from the masked text
 unmask.source = function(text.mask) {
+  if (length(text.mask) == 0) return(text.mask)
   ## if the comments were separated into the next line, then remove '\n' after
   ##   the identifier first to move the comments back to the same line
   text.mask = gsub('%InLiNe_IdEnTiFiEr%[ ]*\n', '%InLiNe_IdEnTiFiEr%', text.mask)
   ## move 'else ...' back to the last line
   text.mask = gsub('\n\\s*else', ' else', text.mask)
-  text.mask = gsub('\\\\\\\\', '\\\\', text.mask)
+  if (R3) {
+    if (any(grepl('\\\\\\\\', text.mask)) && (any(grepl(mat.comment, text.mask)) ||
+          any(grepl(inline.comment, text.mask)))) {
+      m = gregexpr(mat.comment, text.mask)
+      regmatches(text.mask, m) = lapply(regmatches(text.mask, m), restore_bs)
+      m = gregexpr(inline.comment, text.mask)
+      regmatches(text.mask, m) = lapply(regmatches(text.mask, m), restore_bs)
+    }
+  } else text.mask = restore_bs(text.mask)
   text.tidy = gsub(pat.comment, '', text.mask)
   # inline comments should be termined by $ or \n
   text.tidy = gsub(paste(inline.comment, '(\n|$)', sep = ''), '  \\1\\2', text.tidy)
@@ -132,7 +124,7 @@ unmask.source = function(text.mask) {
 #' Format the R scripts under a directory
 #'
 #' This function first looks for all the R scripts under a directory (using the
-#' pattern \code{"\\\\.[RrSsQq]$"}), then uses \code{\link{tidy.source}} to tidy
+#' pattern \code{"[.][RrSsQq]$"}), then uses \code{\link{tidy.source}} to tidy
 #' these scripts. The original scripts will be overwritten with reformatted code
 #' if reformatting was successful. You may need to back up the original
 #' directory first if you do not fully understand the tricks
@@ -151,7 +143,7 @@ unmask.source = function(text.mask) {
 #' file.copy(system.file('demo', package = 'base'), path, recursive=TRUE)
 #' tidy.dir(path, recursive=TRUE)
 tidy.dir = function(path = '.', recursive = FALSE, ...) {
-  flist = list.files(path, pattern = '\\.[RrSsQq]$', full.names = TRUE, recursive = recursive)
+  flist = list.files(path, pattern = '[.][RrSsQq]$', full.names = TRUE, recursive = recursive)
   for (f in flist) {
     message('tidying ', f)
     try(tidy.source(f, file = f, ...))
