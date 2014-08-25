@@ -1,10 +1,11 @@
 # replace `=` by `<-` in expressions
 replace_assignment = function(exp) {
-  library(codetools)
-  wc = makeCodeWalker(
-    call = function (e, w) {
-      cl = walkCode(e[[1]], w)
-      arg = lapply(as.list(e[-1]), function(a) if (missing(a)) NA else walkCode(a, w))
+  wc = codetools::makeCodeWalker(
+    call = function(e, w) {
+      cl = codetools::walkCode(e[[1]], w)
+      arg = lapply(as.list(e[-1]), function(a) if (missing(a)) NA else {
+        codetools::walkCode(a, w)
+      })
       as.call(c(list(cl), arg))
     },
     leaf = function(e, w) {
@@ -13,14 +14,14 @@ replace_assignment = function(exp) {
       if (identical(e, as.name("="))) e <- as.name("<-")
       e
     })
-  lapply(as.list(exp), walkCode, w = wc)
+  lapply(as.list(exp), codetools::walkCode, w = wc)
 }
 
 R3 = getRversion() >= '3.0.0'
 
 ## mask comments to cheat R
 mask_comments = if (R3) function(x, width, keep.blank.line) {
-  d = get_parse_data(x)
+  d = utils::getParseData(parse(text = x, keep.source = TRUE))
   if (nrow(d) == 0 || (n <- sum(d$terminal)) == 0) return(x)
   d = d[d$terminal, ]
   d.line = d$line1; d.line2 = d$line2; d.token = d$token; d.text = d$text
@@ -42,6 +43,7 @@ mask_comments = if (R3) function(x, width, keep.blank.line) {
   c1 = i & c(TRUE, c0 | (d.token[-n] == "'{'"))  # must be comment blocks
   c2 = i & !c1  # inline comments
   c3 = c1 & grepl("^#+'", d.text)  # roxygen comments
+  if (grepl('^#!', d.text[1])) c3[1] = TRUE  # shebang comment
 
   # reflow blocks of comments: first collapse them, then wrap them
   i1 = which(c1 & !c3) # do not wrap roxygen comments
@@ -76,6 +78,7 @@ mask_comments = if (R3) function(x, width, keep.blank.line) {
   x[idx] = gsub('"', "'", x[idx])
   # wrap long comments
   idx = idx & !grepl("^\\s*#+'", x)
+  if (grepl('^#!', x[1])) idx[1] = FALSE  # shebang comment
   x = reflow_comments(x, idx, width)
   idx = grepl('^\\s*#', x)
   x[idx] = sprintf('invisible("%s%s%s")', begin.comment, x[idx], end.comment)
@@ -165,16 +168,6 @@ move_leftbrace = function(text) {
 parse_only = function(code) {
   op = options(keep.source = FALSE); on.exit(options(op))
   base::parse(text = code, srcfile = NULL)
-}
-
-# TODO: this is only a temporary fix to a bug in R 3.0.1 and will be removed in
-# the future; when the code only contains a comment, getParseData() will signal
-# an error
-get_parse_data = function(x) {
-  if (length(i <- grep('^\\s*#', x)) == 1 && all(grepl('^\\s*(#|$)', x)))
-    return(data.frame(line1 = 1, line2 = 1, token = 'COMMENT', terminal = TRUE,
-                      text = gsub('^\\s+|\\s+$', '', x[i]), stringsAsFactors = FALSE))
-  utils::getParseData(parse(text = x, keep.source = TRUE))
 }
 
 # restore backslashes

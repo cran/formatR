@@ -1,0 +1,125 @@
+\name{tidy_source}
+\alias{tidy_source}
+\title{Reformat R code while preserving blank lines and comments}
+\usage{
+tidy_source(source = "clipboard", comment = getOption("formatR.comment", 
+    TRUE), blank = getOption("formatR.blank", TRUE), arrow = getOption("formatR.arrow", 
+    FALSE), brace.newline = getOption("formatR.brace.newline", FALSE), 
+    indent = getOption("formatR.indent", 4), output = TRUE, text = NULL, 
+    width.cutoff = getOption("width"), ...)
+}
+\arguments{
+\item{source}{a character string: location of the source code (default to be
+the clipboard; this means we can copy the code to clipboard and use
+\code{tidy.souce()} without specifying the argument \code{source})}
+
+\item{comment}{whether to keep comments (\code{TRUE} by default)}
+
+\item{blank}{whether to keep blank lines (\code{TRUE} by default)}
+
+\item{arrow}{whether to replace the assign operator \code{=} with \code{<-}}
+
+\item{brace.newline}{whether to put the left brace \code{\{} to a new line
+(default \code{FALSE})}
+
+\item{indent}{number of spaces to indent the code (default 4)}
+
+\item{output}{output to the console or a file using \code{\link{cat}}?}
+
+\item{text}{an alternative way to specify the input: if it is \code{NULL},
+the function will read the source code from the \code{source} argument;
+alternatively, if \code{text} is a character vector containing the source
+code, it will be used as the input and the \code{source} argument will be
+ignored}
+
+\item{width.cutoff}{passed to \code{\link{deparse}}: integer in [20, 500]
+determining the cutoff at which line-breaking is tried (default to be
+\code{getOption("width")})}
+
+\item{...}{other arguments passed to \code{\link{cat}}, e.g. \code{file}
+(this can be useful for batch-processing R scripts, e.g.
+\code{tidy_source(source = 'input.R', file = 'output.R')})}
+}
+\value{
+A list with components \item{text.tidy}{the reformatted code as a
+  character vector} \item{text.mask}{the code containing comments, which are
+  masked in assignments or with the weird operator}
+}
+\description{
+This function returns reformatted source code; it tries to preserve blank
+lines and comments, which is different with \code{\link{parse}} and
+\code{\link{deparse}}. It can also replace \code{=} with \code{<-} where
+\code{=} means assignments, and reindent code by a specified number of spaces
+(default is 4).
+}
+\note{
+Be sure to read the reference to know other limitations.
+}
+\examples{
+library(formatR)
+
+## a messy R script
+messy = system.file("format", "messy.R", package = "formatR")
+tidy_source(messy)
+
+## use the 'text' argument
+src = readLines(messy)
+
+## source code
+cat(src, sep = "\\n")
+
+## the formatted version
+tidy_source(text = src)
+
+## preserve blank lines
+tidy_source(text = src, blank = TRUE)
+
+## indent with 2 spaces
+tidy_source(text = src, indent = 2)
+
+## discard comments!
+tidy_source(text = src, comment = FALSE)
+
+## wanna see the gory truth??
+tidy_source(text = src, output = FALSE)$text.mask
+
+
+## tidy up the source code of image demo
+x = file.path(system.file(package = "graphics"), "demo", "image.R")
+
+# to console
+tidy_source(x)
+
+# to a file
+f = tempfile()
+tidy_source(x, blank = TRUE, file = f)
+
+## check the original code here and see the difference
+file.show(x)
+file.show(f)
+
+## use global options
+options(comment = TRUE, blank = FALSE)
+tidy_source(x)
+
+## if you've copied R code into the clipboard
+if (interactive()) {
+    tidy_source("clipboard")
+    ## write into clipboard again
+    tidy_source("clipboard", file = "clipboard")
+}
+
+## the if-else structure
+tidy_source(text = c("{if(TRUE)1 else 2; if(FALSE){1+1", "## comments", "} else 2}"))
+}
+\author{
+Yihui Xie <\url{http://yihui.name}> with substantial contribution
+  from Yixuan Qiu <\url{http://yixuan.cos.name}>
+}
+\references{
+\url{http://yihui.name/formatR} (an introduction to this package,
+  with examples and further notes)
+}
+\seealso{
+\code{\link{parse}}, \code{\link{deparse}}
+}
