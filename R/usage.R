@@ -19,17 +19,20 @@
 #' usage(plot)
 #'
 #' usage(plot.default)  # default method
-#' usage(plot.lm)  # on the 'lm' class
+#' usage('plot.lm')  # on the 'lm' class
 #'
 #' usage(usage)
 #'
 #' usage(barplot.default, width = 60)  # narrower output
 usage = function(FUN, width = getOption('width'), tidy = TRUE, output = TRUE) {
   fn = as.character(substitute(FUN))
-  res = capture.output(do.call(argsAnywhere, list(fn)))
+  res = capture.output(if (is.function(FUN)) args(FUN) else {
+    do.call(argsAnywhere, list(fn))
+  })
   if (identical(res, 'NULL')) return()
   res[1] = substring(res[1], 9)  # rm 'function ' in the beginning
   isS3 = FALSE
+  if (length(fn) == 3 && (fn[1] %in% c('::', ':::'))) fn = fn[3]
   if (grepl('.', fn, fixed = TRUE)) {
     n = length(parts <- strsplit(fn, '.', fixed = TRUE)[[1]])
     for (i in 2:n) {
@@ -49,14 +52,10 @@ usage = function(FUN, width = getOption('width'), tidy = TRUE, output = TRUE) {
   if (!isS3) res[1] = paste(fn, res[1])
   if ((n <- length(res)) > 1 && res[n] == 'NULL') res = res[-n]  # rm last element 'NULL'
   if (!tidy) {
-    cat(res, sep = '\n')
+    if (output) cat(res, sep = '\n')
     return(invisible(res))
   }
 
-  if (width <= 1) {
-    warning("'width' should no longer be specified as a proportion")
-    width = width * getOption("width")
-  }
   tidy.res = tidy_source(text = res, output = FALSE, width.cutoff = width)
   if (output) cat(tidy.res$text.tidy, sep = '\n')
   invisible(tidy.res$text.tidy)

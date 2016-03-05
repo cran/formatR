@@ -140,12 +140,14 @@ move_leftbrace = function(text) {
 # parse but do not keep source (moved from knitr)
 parse_only = function(code) {
   if (length(code) == 0) return(expression())
-  op = options(keep.source = FALSE); on.exit(options(op))
-  base::parse(text = code, srcfile = NULL)
+  base::parse(text = code, keep.source = FALSE)
 }
 
 # copied from highr
-parse_source = function(lines) {
+# TODO: eventually remove the hack for R <= 3.2.2
+parse_source = if (getRversion() > '3.2.2') function(lines) {
+  parse(text = lines, keep.source = TRUE)
+} else function(lines) {
   # adapted from evaluate
   src = srcfilecopy('<text>', lines = '')
   if (length(grep('\n', lines))) lines = unlist(strsplit(
