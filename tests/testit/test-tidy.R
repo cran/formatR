@@ -58,6 +58,15 @@ assert(
   identical(tidy.res(x1), '{\n    if (TRUE) {\n        1\n    } else 2\n}')
 )
 
+x1 = '{x=1
+else.x=2
+}'
+
+assert(
+  'should not move any lines starting with `else` back to the previous line',
+  tidy.res(x1) %==% '{\n    x = 1\n    else.x = 2\n}'
+)
+
 x1 = 'if (TRUE) {# comment
 1
 }'
@@ -109,10 +118,25 @@ x1 = 'x="
 "'
 assert(
   'since R 3.0.0, # in the beginning of a line does not necessarily mean comments',
-  identical(tidy.res(x1), 'x = "\\n# this is not a comment\\n"')
+  identical(tidy.res(x1), 'x = "\n# this is not a comment\n"')
 )
 
 assert(
   'the shebang is preserved',
   identical(tidy.res(c('#!/usr/bin/Rscript', '1+1')), c('#!/usr/bin/Rscript', '1 + 1'))
+)
+
+x1 = paste0('x="', r <- rand_string(2000), '"')
+assert(
+  'Long strings (> 1000 chars) can be preserved',
+  tidy.res(x1) %==% paste0('x = "', r, '"')
+)
+
+x1 = 'x = "
+  this is a
+  character string
+"'
+assert(
+  'line breaks in strings are preserved instead of being replaced by \\n',
+  tidy.res(x1) %==% x1
 )

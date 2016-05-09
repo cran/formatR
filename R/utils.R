@@ -22,6 +22,7 @@ mask_comments = function(x, width, keep.blank.line) {
   d = utils::getParseData(parse_source(x))
   if (nrow(d) == 0 || (n <- sum(d$terminal)) == 0) return(x)
   d = d[d$terminal, ]
+  d = fix_parse_data(d, x)
   d.line = d$line1; d.line2 = d$line2; d.token = d$token; d.text = d$text
 
   # move else back
@@ -40,7 +41,7 @@ mask_comments = function(x, width, keep.blank.line) {
   c0 = d.line[-1] != d.line[-n]  # is there a line change?
   c1 = i & c(TRUE, c0 | (d.token[-n] == "'{'"))  # must be comment blocks
   c2 = i & !c1  # inline comments
-  c3 = c1 & grepl("^#+'", d.text)  # roxygen comments
+  c3 = c1 & grepl("^#+[-'+]", d.text)  # roxygen or knitr spin() comments
   if (grepl('^#!', d.text[1])) c3[1] = TRUE  # shebang comment
 
   # reflow blocks of comments: first collapse them, then wrap them
@@ -74,7 +75,7 @@ mask_comments = function(x, width, keep.blank.line) {
 move_else = function(x) {
   blank = grepl('^\\s*$', x)
   if (!any(blank)) return(x)
-  else.line = grep('^\\s*else(\\W|)', x)
+  else.line = grep('^\\s*else(\\s+|$)', x)
   for (i in else.line) {
     j = i - 1
     while (blank[j]) {
@@ -157,6 +158,46 @@ parse_source = if (getRversion() > '3.2.2') function(lines) {
   parse(text = lines, srcfile = src)
 }
 
-
 # restore backslashes
 restore_bs = function(x) gsub('\\\\\\\\', '\\\\', x)
+
+# a workaround for the R bug (long strings are truncated in getParseData()):
+# https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16354
+fix_parse_data = function(d, x) {
+  if (length(s <- which(d$token == 'STR_CONST')) == 0) return(d)
+  ws = s[grep('^\\[\\d+ (wide )?chars quoted with \'"\'\\]$', d$text[s])]
+  for (i in ws) {
+    di = d[i, , drop = FALSE]
+    d[i, 'text'] = get_src_string(x, di$line1, di$line2, di$col1, di$col2)
+  }
+  d[s, 'text'] = mask_line_break(d[s, 'text'])
+  d
+}
+
+get_src_string = function(x, l1, l2, c1, c2) {
+  if (l1 == l2) return(substr(x[l1], c1, c2))
+  x[l1] = substr(x[l1], c1, nchar(x[l1]))
+  x[l2] = substr(x[l2], 1, c2)
+  paste(x[l1:l2], collapse = '\n')
+}
+
+# generate a random string
+CHARS = c(letters, LETTERS, 0:9)
+rand_string = function(len = 32) {
+  paste(sample(CHARS, len, replace = TRUE), collapse = '')
+}
+
+.env = new.env()
+.env$line_break = NULL
+
+mask_line_break = function(x) {
+  if (length(grep('\n', x)) == 0) return(x)
+  m = (function() {
+    for (i in 2:10) {
+      for (j in 1:100) if (length(grep(s <- rand_string(i), x)) == 0) return(s)
+    }
+  })()
+  if (is.null(m)) return(x)
+  .env$line_break = m
+  gsub('\n', m, x)
+}

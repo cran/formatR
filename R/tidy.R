@@ -47,60 +47,12 @@ tidy_source = function(
   output = TRUE, text = NULL,
   width.cutoff = getOption('width'), ...
 ) {
-  # compatibility with formatR <= v0.10
-  if (is.logical(getOption('keep.comment'))) {
-    warning("The option 'keep.comment' is deprecated; please use 'formatR.comment'")
-    options(formatR.comment = getOption('keep.comment'))
-  }
-  if (is.logical(getOption('keep.blank.line'))) {
-    warning("The option 'keep.blank.line' is deprecated; please use 'formatR.blank'")
-    options(formatR.blank = getOption('keep.blank.line'))
-  }
-  if (is.logical(getOption('replace.assign'))) {
-    warning("The option 'replace.assign' is deprecated; please use 'formatR.arrow'")
-    options(formatR.arrow = getOption('replace.assign'))
-  }
-  if (is.logical(getOption('left.brace.newline'))) {
-    warning("The option 'left.brace.newline' is deprecated; please use 'formatR.brace.newline'")
-    options(formatR.brace.newline = getOption('left.brace.newline'))
-  }
-  if (is.numeric(getOption('reindent.spaces'))) {
-    warning("The option 'reindent.spaces' is deprecated; please use 'formatR.indent'")
-    options(formatR.indent = getOption('reindent.spaces'))
-  }
-  extra = list(...)
-  if (is.logical(extra$keep.comment)) {
-    warning("The argument 'keep.comment' is deprecated; please use 'comment'")
-    comment = extra$keep.comment
-    extra$keep.comment = NULL
-  }
-  if (is.logical(extra$keep.blank.line)) {
-    warning("The argument 'keep.blank.line' is deprecated; please use 'blank'")
-    blank = extra$keep.blank.line
-    extra$keep.blank.line = NULL
-  }
-  if (is.logical(extra$replace.assign)) {
-    warning("The argument 'replace.assign' is deprecated; please use 'arrow'")
-    arrow = extra$replace.assign
-    extra$replace.assign = NULL
-  }
-  if (is.logical(extra$left.brace.newline)) {
-    warning("The argument 'left.brace.newline' is deprecated; please use 'brace.newline'")
-    brace.newline = extra$left.brace.newline
-    extra$left.brace.newline = NULL
-  }
-  if (is.numeric(extra$reindent.spaces)) {
-    warning("The argument 'reindent.spaces' is deprecated; please use 'indent'")
-    indent = extra$reindent.spaces
-    extra$reindent.spaces = NULL
-  }
-
   if (is.null(text)) {
     if (source == 'clipboard' && Sys.info()['sysname'] == 'Darwin') {
       source = pipe('pbpaste')
     }
   } else {
-    source = textConnection(text); on.exit(close(source))
+    source = textConnection(text); on.exit(close(source), add = TRUE)
   }
   text = readLines(source, warn = FALSE)
   if (length(text) == 0L || all(grepl('^\\s*$', text))) {
@@ -112,6 +64,7 @@ tidy_source = function(
     n1 = attr(regexpr('^\n*', one), 'match.length')
     n2 = attr(regexpr('\n*$', one), 'match.length')
   }
+  on.exit(.env$line_break <- NULL, add = TRUE)
   if (comment) text = mask_comments(text, width.cutoff, blank)
   text.mask = tidy_block(text, width.cutoff, arrow && length(grep('=', text)))
   text.tidy = if (comment) unmask_source(text.mask) else text.mask
@@ -119,7 +72,7 @@ tidy_source = function(
   if (brace.newline) text.tidy = move_leftbrace(text.tidy)
   # restore new lines in the beginning and end
   if (blank) text.tidy = c(rep('', n1), text.tidy, rep('', n2))
-  if (output) do.call(cat, c(list(paste(text.tidy, collapse = '\n'), '\n'), extra))
+  if (output) cat(text.tidy, sep = '\n', ...)
   invisible(list(text.tidy = text.tidy, text.mask = text.mask))
 }
 
@@ -142,11 +95,13 @@ tidy_block = function(text, width = getOption('width'), arrow = FALSE) {
 # Restore the real source code from the masked text
 unmask_source = function(text.mask) {
   if (length(text.mask) == 0) return(text.mask)
+  m = .env$line_break
+  if (!is.null(m)) text.mask = gsub(m, '\n', text.mask)
   ## if the comments were separated into the next line, then remove '\n' after
   ##   the identifier first to move the comments back to the same line
   text.mask = gsub('%InLiNe_IdEnTiFiEr%[ ]*\n', '%InLiNe_IdEnTiFiEr%', text.mask)
   ## move 'else ...' back to the last line
-  text.mask = gsub('\n\\s*else', ' else', text.mask)
+  text.mask = gsub('\n\\s*else(\\s+|$)', ' else\\1', text.mask)
   if (any(grepl('\\\\\\\\', text.mask)) &&
       (any(grepl(mat.comment, text.mask)) || any(grepl(inline.comment, text.mask)))) {
     m = gregexpr(mat.comment, text.mask)
@@ -155,7 +110,7 @@ unmask_source = function(text.mask) {
     regmatches(text.mask, m) = lapply(regmatches(text.mask, m), restore_bs)
   }
   text.tidy = gsub(pat.comment, '', text.mask)
-  # inline comments should be termined by $ or \n
+  # inline comments should be terminated by $ or \n
   text.tidy = gsub(paste(inline.comment, '(\n|$)', sep = ''), '  \\1\\2', text.tidy)
   # the rest of inline comments should be appended by \n
   gsub(inline.comment, '  \\1\n', text.tidy)
