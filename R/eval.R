@@ -15,13 +15,13 @@
 #' @return Evaluated R code with corresponding output (printed on screen or
 #'   written in a file).
 #' @export
-#' @references \url{http://yihui.name/formatR}
+#' @references \url{https://yihui.name/formatR}
 #' @examples library(formatR)
 #' ## evaluate simple code as a character vector
 #' tidy_eval(text = c('a<-1+1;a','matrix(rnorm(10),5)'))
 #'
 #' ## evaluate a file
-#' tidy_eval(file.path(system.file(package = 'stats'), 'demo', 'nlm.R'))
+#' tidy_eval(system.file('format', 'messy.R', package = 'formatR'))
 tidy_eval = function(source = 'clipboard', ..., file = '', prefix = '## ', envir = parent.frame()) {
   txt = tidy_source(source, ..., output = FALSE)$text.tidy
   for(i in 1:length(txt)) {

@@ -30,10 +30,10 @@
 #'   character vector} \item{text.mask}{the code containing comments, which are
 #'   masked in assignments or with the weird operator}
 #' @note Be sure to read the reference to know other limitations.
-#' @author Yihui Xie <\url{http://yihui.name}> with substantial contribution
+#' @author Yihui Xie <\url{https://yihui.name}> with substantial contribution
 #'   from Yixuan Qiu <\url{http://yixuan.cos.name}>
 #' @seealso \code{\link{parse}}, \code{\link{deparse}}
-#' @references \url{http://yihui.name/formatR} (an introduction to this package,
+#' @references \url{https://yihui.name/formatR} (an introduction to this package,
 #'   with examples and further notes)
 #' @import utils
 #' @export
@@ -117,19 +117,20 @@ unmask_source = function(text.mask) {
 }
 
 
-#' Format the R scripts under a directory
+#' Format all R scripts under a directory, or specified R scripts
 #'
-#' This function first looks for all the R scripts under a directory (using the
-#' pattern \code{"[.][RrSsQq]$"}), then uses \code{\link{tidy_source}} to tidy
-#' these scripts. The original scripts will be overwritten with reformatted code
-#' if reformatting was successful. You may need to back up the original
-#' directory first if you do not fully understand the tricks
-#' \code{\link{tidy_source}} is using.
+#' \code{tidy_dir()} first looks for all the R scripts under a directory (using
+#' the pattern \code{"[.][RrSsQq]$"}), then uses \code{\link{tidy_source}} to
+#' tidy these scripts. The original scripts will be overwritten with reformatted
+#' code if reformatting was successful. You may need to back up the original
+#' directory first if you do not fully understand the tricks used by
+#' \code{\link{tidy_source}}. \code{tidy_file()} formats specified R scripts.
 #' @param path the directory
 #' @param recursive whether to recursively look for R scripts under \code{path}
 #' @param ... other arguments to be passed to \code{\link{tidy_source}}
+#' @param file a vector of filenames
 #' @return Invisible \code{NULL}.
-#' @author Yihui Xie <\url{http://yihui.name}>
+#' @author Yihui Xie (\code{tidy_dir}) and Ed Lee (\code{tidy_file})
 #' @seealso \code{\link{tidy_source}}
 #' @export
 #' @examples
@@ -139,9 +140,16 @@ unmask_source = function(text.mask) {
 #' file.copy(system.file('demo', package = 'base'), path, recursive=TRUE)
 #' tidy_dir(path, recursive=TRUE)
 tidy_dir = function(path = '.', recursive = FALSE, ...) {
-  flist = list.files(path, pattern = '[.][RrSsQq]$', full.names = TRUE, recursive = recursive)
-  for (f in flist) {
-    message('tidying ', f)
+  tidy_file(list.files(
+    path, pattern = '[.][RrSsQq]$', full.names = TRUE, recursive = recursive
+  ), ...)
+}
+
+#' @export
+#' @rdname tidy_dir
+tidy_file = function(file, ...) {
+  for (f in file) {
+    message("tidying ", f)
     try(tidy_source(f, file = f, ...))
   }
 }
