@@ -54,10 +54,9 @@ tidy_source = function(
     if (source == 'clipboard' && Sys.info()['sysname'] == 'Darwin') {
       source = pipe('pbpaste')
     }
-  } else {
-    source = textConnection(text); on.exit(close(source), add = TRUE)
+    text = readLines(source, warn = FALSE)
   }
-  text = readLines(source, warn = FALSE)
+  enc = special_encoding(text)
   if (length(text) == 0L || all(grepl('^\\s*$', text))) {
     if (output) cat('\n', ...)
     return(list(text.tidy = text, text.mask = text))
@@ -76,7 +75,10 @@ tidy_source = function(
   # restore new lines in the beginning and end
   if (blank) text.tidy = c(rep('', n1), text.tidy, rep('', n2))
   if (output) cat(text.tidy, sep = '\n', ...)
-  invisible(list(text.tidy = text.tidy, text.mask = text.mask))
+  invisible(list(
+    text.tidy = restore_encoding(text.tidy, enc),
+    text.mask = restore_encoding(text.mask, enc)
+  ))
 }
 
 ## if you have variable names like this in your code, then you really beat me...
