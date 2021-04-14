@@ -55,7 +55,7 @@ usage(glm, width = 40)  # can set arbitrary width here
 args(glm)
 
 ## ----echo=FALSE, results='asis'-------------------------------------
-if (ignore_img <- Sys.getenv('USER', '') != 'yihui') cat('<!--')
+if (ignore_img <- !is.na(Sys.getenv('_R_CHECK_PACKAGE_NAME_', NA))) cat('<!--')
 
 ## ----echo=FALSE, results='asis'-------------------------------------
 if (ignore_img) cat('\n-->')
@@ -119,6 +119,12 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
 #  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
+
+## ---- pipe-code, eval=FALSE, tidy=FALSE-----------------------------
+#  mtcars %>% subset(am == 0) %>% lm(mpg~hp, data=.)
+
+## ---- pipe-code, eval=FALSE, tidy=TRUE------------------------------
+#  mtcars %>% subset(am == 0) %>% lm(mpg~hp, data=.)
 
 ## ----example, eval=FALSE, echo=6, tidy.opts=list(brace.newline = TRUE)----
 #  ## comments are retained;

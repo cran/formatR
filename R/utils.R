@@ -18,7 +18,7 @@ replace_assignment = function(exp) {
 }
 
 ## mask comments to cheat R
-mask_comments = function(x, width, keep.blank.line, wrap = TRUE) {
+mask_comments = function(x, width, keep.blank.line, wrap = TRUE, spaces) {
   d = utils::getParseData(parse_source(x))
   if (nrow(d) == 0 || (n <- sum(d$terminal)) == 0) return(x)
   d = d[d$terminal, ]
@@ -62,16 +62,20 @@ mask_comments = function(x, width, keep.blank.line, wrap = TRUE) {
   # mask block and inline comments
   d.text[c1 & !c3] = reflow_comments(d.text[c1 & !c3], width)
   d.text[c3] = sprintf('invisible("%s%s%s")', begin.comment, d.text[c3], end.comment)
-  d.text[c2] = sprintf('%%InLiNe_IdEnTiFiEr%% "%s"', d.text[c2])
+  d.text[c2] = sprintf('%%\b%% "%s"', d.text[c2])
 
   # add blank lines
   if (keep.blank.line) for (i in seq_along(d.text)) {
     if (blank[i] > 0)
       d.text[i] = paste(c(d.text[i], rep(blank.comment, blank[i])), collapse = '\n')
   }
+  # break lines after some infix operators such as %>%
+  d.text = gsub(paste0('^(%)(', infix_ops, ')(%)$'), paste0('\\1\\2', spaces, '\\3'), d.text)
 
   unlist(lapply(split(d.text, d.line), paste, collapse = ' '), use.names = FALSE)
 }
+
+infix_ops = '[>$]|T>|<>'
 
 # no blank lines before an 'else' statement!
 move_else = function(x) {
@@ -87,16 +91,6 @@ move_else = function(x) {
   }
   x[blank] = blank.comment
   x
-}
-
-# a literal # must be writen in double quotes, e.g. "# is not comment"
-mask_inline = function(x) {
-  # move comments after { to the next line
-  if (length(idx <- grep('\\{\\s*#.*$', x))) {
-    p = paste('{\ninvisible("', begin.comment, '\\1', end.comment, '")', sep = '')
-    x[idx] = gsub('\\{\\s*(#.*)$', p, x[idx])
-  }
-  gsub('(#[^"]*)$', ' %InLiNe_IdEnTiFiEr% "\\1"', x)
 }
 
 # reflow comments (excluding roxygen comments)
@@ -116,28 +110,23 @@ reindent_lines = function(text, n = 2) {
   if (length(text) == 0) return(text)
   if (n == 4) return(text)  # no need to do anything
   s = paste(rep(' ', n), collapse = '')
-  unlist(lapply(strsplit(text, '\n'), function(x) {
-    t1 = gsub('^( *)(.*)', '\\1', x)
-    t2 = gsub('^( *)(.*)', '\\2', x)
-    paste(gsub(' {4}', s, t1), t2, sep = '', collapse = '\n')
-  }), use.names = FALSE)
+  t1 = gsub('^( *)(.*)', '\\1', text)
+  t2 = gsub('^( *)(.*)', '\\2', text)
+  paste0(gsub(' {4}', s, t1), t2)
 }
 
 # move { to the next line
-move_leftbrace = function(text) {
-  if (!length(text)) return(text)
-  # the reason to use lapply() here is that text is a vector of source code with
-  # each element being a complete R expression; we do not want to break the
-  # expression structure; same reason for reindent_lines() above
-  unlist(lapply(strsplit(text, '\n'), function(x) {
-    if (length(x) > 1L && length(idx <- grep('(\\)|else) \\{$', x))) {
-      # indent the same amount of spaces as the { lines
-      pre = gsub('^( *)(.*)', '\\1', x[idx])
-      x[idx] = mapply(gsub, '(\\)|else) \\{$', sprintf('\\1\n%s{', pre), x[idx],
-                      USE.NAMES = FALSE)
-    }
-    paste(x, collapse = '\n')
-  }), use.names = FALSE)
+move_leftbrace = function(x) {
+  if (length(idx <- grep('(\\)|else) \\{$', x)) == 0) return(x)
+  # indent the same amount of spaces as the { lines
+  b = gsub('^( *)(.*)', '\\1{', x[idx])
+  j = 0
+  x[idx] = gsub(' \\{$', '', x[idx])
+  for (i in seq_along(idx)) {
+    x = append(x, b[i], idx[i] + j)
+    j = j + 1
+  }
+  x
 }
 
 # parse but do not keep source (moved from knitr)
@@ -182,6 +171,7 @@ rand_string = function(len = 32) {
 .env = new.env()
 .env$line_break = NULL
 
+# protect \n in source code, otherwise deparse() will change it to \\n
 mask_line_break = function(x) {
   if (length(grep('\n', x)) == 0) return(x)
   m = (function() {
