@@ -12,7 +12,7 @@
 
 <meta name="author" content="Yihui Xie" />
 
-<meta name="date" content="2021-05-25" />
+<meta name="date" content="2021-06-01" />
 
 <title>formatR</title>
 
@@ -142,7 +142,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h1 class="title toc-ignore">formatR</h1>
 <h3 class="subtitle">Format R code automatically</h3>
 <h4 class="author">Yihui Xie</h4>
-<h4 class="date">2021-05-25</h4>
+<h4 class="date">2021-06-01</h4>
 
 
 <div id="TOC">
@@ -156,17 +156,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="#replace-with--">Replace <code>=</code> with <code>&lt;-</code></a></li>
 <li><a href="#discard-blank-lines">Discard blank lines</a></li>
 <li><a href="#reindent-code-2-spaces-instead-of-4">Reindent code (2 spaces instead of 4)</a></li>
-<li><a href="#the-pipe-operator">The pipe operator <code>%&gt;%</code></a></li>
+<li><a href="#start-function-arguments-on-a-new-line">Start function arguments on a new line</a></li>
+<li><a href="#the-pipe-operators-and">The pipe operators <code>%&gt;%</code> and <code>|&gt;</code></a></li>
 <li><a href="#move-left-braces-to-new-lines">Move left braces <code>{</code> to new lines</a></li>
 <li><a href="#do-not-wrap-comments">Do not wrap comments</a></li>
 <li><a href="#discard-comments">Discard comments</a></li>
 </ul></li>
 <li><a href="#further-notes">6. Further notes</a>
 <ul>
-<li><a href="#in-line-comments-after-an-incomplete-expression-or">In-line comments after an incomplete expression or ;</a></li>
+<li><a href="#inline-comments-after-an-incomplete-expression-or">Inline comments after an incomplete expression or ;</a></li>
 <li><a href="#inappropriate-blank-lines">Inappropriate blank lines</a></li>
 <li><a href="#with-comments"><code>?</code> with comments</a></li>
-<li><a href="#with-comments-1"><code>-&gt;</code> with comments</a></li>
 </ul></li>
 <li><a href="#how-does-tidy_source-actually-work">7. How does <code>tidy_source()</code> actually work?</a></li>
 <li><a href="#global-options">8. Global options</a></li>
@@ -204,7 +204,7 @@ if (location.protocol === 'https:' && location.href.match('yihui.org') === null)
 ## [7] base     
 ## 
 ## other attached packages:
-## [1] formatR_1.10
+## [1] formatR_1.11
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] digest_0.6.27     R6_2.5.0          jsonlite_1.7.2   
@@ -218,13 +218,15 @@ if (location.protocol === 'https:' && location.href.match('yihui.org') === null)
 <h1>2. Reformat R code</h1>
 <p>The <strong>formatR</strong> package was designed to reformat R code to improve readability; the main workhorse is the function <code>tidy_source()</code>. Features include:</p>
 <ul>
-<li>long lines of code and comments are reorganized into appropriately shorter ones</li>
-<li>spaces and indent are added where necessary</li>
-<li>comments are preserved in most cases</li>
-<li>the number of spaces to indent the code (i.e. tab width) can be specified (default is 4)</li>
-<li>an <code>else</code> statement in a separate line without the leading <code>}</code> will be moved one line back</li>
-<li><code>=</code> as an assignment operator can be replaced with <code>&lt;-</code></li>
-<li>the left brace <code>{</code> can be moved to a new line</li>
+<li>Long lines of code and comments are reorganized into appropriately shorter ones;</li>
+<li>Spaces and indentation are added where necessary;</li>
+<li>Comments are preserved in most cases;</li>
+<li>The number of spaces to indent the code (i.e., tab width) can be specified (default is 4);</li>
+<li>An <code>else</code> statement on a separate line without the leading <code>}</code> will be moved one line back;</li>
+<li><code>=</code> as an assignment operator can be replaced with <code>&lt;-</code>;</li>
+<li>The left brace <code>{</code> can be moved to a new line;</li>
+<li>Arguments of a function call can start on a new line after the function name when they cannot fit on one line;</li>
+<li>Lines can be wrapped after pipes (both magrittr pipes such as <code>%&gt;%</code> and R’s native pipe <code>|&gt;</code> are supported).</li>
 </ul>
 <p>Below is an example of what <code>tidy_source()</code> can do. The source code is:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">## comments are retained;</span></span>
@@ -240,7 +242,7 @@ if (location.protocol === 'https:' && location.href.match('yihui.org') === null)
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span><span class="sc">+</span><span class="dv">2</span><span class="sc">+</span><span class="dv">2</span>    <span class="co"># only &#39;single quotes&#39; are allowed in comments</span></span>
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(y<span class="sc">~</span>x1<span class="sc">+</span>x2, <span class="at">data=</span><span class="fu">data.frame</span>(<span class="at">y=</span><span class="fu">rnorm</span>(<span class="dv">100</span>),<span class="at">x1=</span><span class="fu">rnorm</span>(<span class="dv">100</span>),<span class="at">x2=</span><span class="fu">rnorm</span>(<span class="dv">100</span>)))  <span class="do">### a linear model</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span>  <span class="co"># comment after a long line</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span>  <span class="co"># comment after a long line</span></span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="do">## here is a long long long long long long long long long long long long long comment that may be wrapped</span></span></code></pre></div>
 <p>We can copy the above code to clipboard, and type <code>tidy_source(width.cutoff = 50)</code> to get:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">## comments are retained; a comment block will be</span></span>
@@ -257,10 +259,10 @@ if (location.protocol === 'https:' && location.href.match('yihui.org') === null)
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span>  <span class="co"># one space before this comment will become two!</span></span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span>  <span class="co"># only &#39;single quotes&#39; are allowed in comments</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(y <span class="sc">~</span> x1 <span class="sc">+</span> x2, <span class="at">data =</span> <span class="fu">data.frame</span>(<span class="at">y =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>), <span class="at">x1 =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>), </span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(y <span class="sc">~</span> x1 <span class="sc">+</span> x2, <span class="at">data =</span> <span class="fu">data.frame</span>(<span class="at">y =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>), <span class="at">x1 =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>),</span>
 <span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">x2 =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)))  <span class="do">### a linear model</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> </span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span>  <span class="co"># comment after a long line</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span>  <span class="co"># comment after a long line</span></span>
 <span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="do">## here is a long long long long long long long</span></span>
 <span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="do">## long long long long long long comment that may</span></span>
 <span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="do">## be wrapped</span></span></code></pre></div>
@@ -320,7 +322,12 @@ matrix(rnorm(10), 5)
 <p>We continue the example code in Section 2, using different arguments in <code>tidy_source()</code> such as <code>arrow</code>, <code>blank</code>, <code>indent</code>, <code>brace.newline</code> and <code>comment</code>, etc.</p>
 <div id="replace-with--" class="section level2">
 <h2>Replace <code>=</code> with <code>&lt;-</code></h2>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span>  <span class="co"># one space before this comment will become two!</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="dv">1</span>  <span class="co"># inline comments</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">&quot;Oh no... ask the right bracket to go away!&quot;</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div id="discard-blank-lines" class="section level2">
 <h2>Discard blank lines</h2>
@@ -335,104 +342,120 @@ matrix(rnorm(10), 5)
 <span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">=</span> <span class="dv">2</span></span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">&quot;Oh no... ask the right bracket to go away!&quot;</span>)</span>
 <span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span>  <span class="co"># one space before this comment will become two!</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span>  <span class="co"># only &#39;single quotes&#39; are allowed in comments</span></span></code></pre></div>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span>  <span class="co"># one space before this comment will become two!</span></span></code></pre></div>
 </div>
 <div id="reindent-code-2-spaces-instead-of-4" class="section level2">
 <h2>Reindent code (2 spaces instead of 4)</h2>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span>  <span class="co"># one space before this comment will become two!</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">=</span> <span class="dv">1</span>  <span class="co"># inline comments</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Oh no... ask the right bracket to go away!&quot;</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
-<div id="the-pipe-operator" class="section level2">
-<h2>The pipe operator <code>%&gt;%</code></h2>
-<p>Since <strong>formatR</strong> 1.9, code lines contains operators <code>%&gt;%</code>, <code>%T%</code>, <code>%$%</code>, and/or <code>%&lt;&gt;%</code> will be automatically wrapped after these operators. For example,</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>mtcars <span class="sc">%&gt;%</span> <span class="fu">subset</span>(am <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> <span class="fu">lm</span>(mpg<span class="sc">~</span>hp, <span class="at">data=</span>.)</span></code></pre></div>
+<div id="start-function-arguments-on-a-new-line" class="section level2">
+<h2>Start function arguments on a new line</h2>
+<p>With <code>args.newline = TRUE</code>, the example code below</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">updateSelectizeInput</span>(session, <span class="st">&quot;foo&quot;</span>, <span class="at">label =</span> <span class="st">&quot;New Label&quot;</span>, <span class="at">selected =</span> <span class="fu">c</span>(<span class="st">&quot;A&quot;</span>,</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;B&quot;</span>), <span class="at">choices =</span> LETTERS, <span class="at">server =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 <p>will be reformatted to:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>mtcars <span class="sc">%&gt;%</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">subset</span>(am <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">lm</span>(mpg <span class="sc">~</span> hp, <span class="at">data =</span> .)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">updateSelectizeInput</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    session, <span class="st">&quot;foo&quot;</span>, <span class="at">label =</span> <span class="st">&quot;New Label&quot;</span>, <span class="at">selected =</span> <span class="fu">c</span>(<span class="st">&quot;A&quot;</span>, <span class="st">&quot;B&quot;</span>),</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">choices =</span> LETTERS, <span class="at">server =</span> <span class="cn">TRUE</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="the-pipe-operators-and" class="section level2">
+<h2>The pipe operators <code>%&gt;%</code> and <code>|&gt;</code></h2>
+<p>Since <strong>formatR</strong> 1.9, code lines contains operators <code>|&gt;</code>, <code>%&gt;%</code>, <code>%T%</code>, <code>%$%</code>, and/or <code>%&lt;&gt;%</code> will be automatically wrapped after these operators. For example,</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>mtcars <span class="sc">%&gt;%</span> <span class="fu">subset</span>(am <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> <span class="fu">lm</span>(mpg<span class="sc">~</span>hp, <span class="at">data=</span>.)</span></code></pre></div>
+<p>will be reformatted to:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>mtcars <span class="sc">%&gt;%</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">subset</span>(am <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">lm</span>(mpg <span class="sc">~</span> hp, <span class="at">data =</span> .)</span></code></pre></div>
 </div>
 <div id="move-left-braces-to-new-lines" class="section level2">
 <h2>Move left braces <code>{</code> to new lines</h2>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span>  <span class="co"># one space before this comment will become two!</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">=</span> <span class="dv">1</span>  <span class="co"># inline comments</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">&quot;Oh no... ask the right bracket to go away!&quot;</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div id="do-not-wrap-comments" class="section level2">
 <h2>Do not wrap comments</h2>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> </span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span>  <span class="co"># comment after a long line</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="do">## here is a long long long long long long long long long long long long long comment that may be wrapped</span></span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span>  <span class="co"># comment after a long line</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="do">## here is a long long long long long long long long long long long long long comment that may be wrapped</span></span></code></pre></div>
 </div>
 <div id="discard-comments" class="section level2">
 <h2>Discard comments</h2>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">=</span> <span class="dv">1</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">=</span> <span class="dv">2</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">&quot;Oh no... ask the right bracket to go away!&quot;</span>)</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(y <span class="sc">~</span> x1 <span class="sc">+</span> x2, <span class="at">data =</span> <span class="fu">data.frame</span>(<span class="at">y =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>), <span class="at">x1 =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>), </span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">x2 =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)))</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> </span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">&quot;Oh no... ask the right bracket to go away!&quot;</span>)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">*</span> <span class="dv">3</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(y <span class="sc">~</span> x1 <span class="sc">+</span> x2, <span class="at">data =</span> <span class="fu">data.frame</span>(<span class="at">y =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>), <span class="at">x1 =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>),</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">x2 =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>)))</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code></pre></div>
 </div>
 </div>
 <div id="further-notes" class="section level1">
 <h1>6. Further notes</h1>
 <p>The tricks used in this packages are very dirty. There might be dangers in using the functions in <strong>formatR</strong>. Please read the next section carefully to know exactly how comments are preserved. The best strategy to avoid failure is to put comments in complete lines or after <em>complete</em> R expressions. Below are some known cases in which <code>tidy_source()</code> fails.</p>
-<div id="in-line-comments-after-an-incomplete-expression-or" class="section level2">
-<h2>In-line comments after an incomplete expression or ;</h2>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">+</span> <span class="do">## comments after an incomplete line</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span> <span class="sc">+</span> <span class="dv">4</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="do">## this is not a complete expression</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>     <span class="dv">5</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span>; <span class="co"># you should not use ; here!</span></span></code></pre></div>
+<div id="inline-comments-after-an-incomplete-expression-or" class="section level2">
+<h2>Inline comments after an incomplete expression or ;</h2>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">+</span> <span class="do">## comments after an incomplete line</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span> <span class="sc">+</span> <span class="dv">4</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="do">## this is not a complete expression</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>     <span class="dv">5</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span>; <span class="co"># you should not use ; here!</span></span></code></pre></div>
 <p>Code with comments after incomplete R expression cannot be reformatted by <strong>formatR</strong>. By the way, <code>tidy_source()</code> will move comments after <code>{</code> to the next line, e.g.,</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {<span class="do">## comments</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {<span class="do">## comments</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>will become</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="do">## comments</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>) {</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="do">## comments</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div id="inappropriate-blank-lines" class="section level2">
 <h2>Inappropriate blank lines</h2>
 <p>Blank lines are often used to separate complete chunks of R code, and arbitrary blank lines may cause failures in <code>tidy_source()</code> as well when the argument <code>blank = TRUE</code>, e.g.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>)</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>{<span class="st">&#39;this is a BAD style of R programming!&#39;</span>} <span class="cf">else</span> <span class="st">&#39;failure!&#39;</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="cn">TRUE</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>{<span class="st">&#39;this is a BAD style of R programming!&#39;</span>} <span class="cf">else</span> <span class="st">&#39;failure!&#39;</span></span></code></pre></div>
 <p>There should not be a blank line after the <code>if</code> statement. Of course <code>blank = FALSE</code> will not fail in this case.</p>
 </div>
 <div id="with-comments" class="section level2">
 <h2><code>?</code> with comments</h2>
 <p>We can use the question mark (<code>?</code>) to view the help page, but <strong>formatR</strong> package is unable to correctly format the code using <code>?</code> with comments, e.g.</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>?sd  <span class="co"># help on sd()</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>?sd  <span class="co"># help on sd()</span></span></code></pre></div>
 <p>In this case, it is recommended to use the function <code>help()</code> instead of the short-hand version <code>?</code>.</p>
-</div>
-<div id="with-comments-1" class="section level2">
-<h2><code>-&gt;</code> with comments</h2>
-<p>We can also use the right arrow <code>-&gt;</code> for assignment, e.g. <code>1:10 -&gt; x</code>. I believe this flexibility is worthless, and it is amazing that a language has three assignment operators: <code>&lt;-</code>, <code>=</code> and <code>-&gt;</code> (whereas almost all other languages uses <code>=</code> for assignment). Bad news for <strong>formatR</strong> is that it is unable to format code using both <code>-&gt;</code> and comments in a line, e.g.</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">:</span><span class="dv">10</span> <span class="ot">-&gt;</span> x  <span class="co"># assignment with right arrow</span></span></code></pre></div>
-<p>I recommend you to use <code>&lt;-</code> or <code>=</code> consistently. What is more important is consistency. I always use <code>=</code> because it causes me no confusion (I do not believe it is ever possible for people to interpret <code>fun(a = 1)</code> as assigning <code>1</code> to a variable <code>a</code> instead of passing an argument value) and <code>&lt;-</code> is more dangerous because it works everywhere (you might have unconsciously created a new variable <code>a</code> in <code>fun(a &lt;- 1)</code>; see <a href="https://stat.ethz.ch/pipermail/r-devel/2011-December/062786.html">an example here</a>). The only disadvantage is that most R people use <code>&lt;-</code> so it may be difficult to collaborate with other people.</p>
 </div>
 </div>
 <div id="how-does-tidy_source-actually-work" class="section level1">
 <h1>7. How does <code>tidy_source()</code> actually work?</h1>
 <p>In a nutshell, <code>tidy_source(text = code)</code> is basically <code>deparse(parse(text = code))</code>, but actually it is more complicated only because of one thing: <code>deparse()</code> drops comments, e.g.,</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">deparse</span>(<span class="fu">parse</span>(<span class="at">text =</span> <span class="st">&quot;1+2-3*4/5 # a comment&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">deparse</span>(<span class="fu">parse</span>(<span class="at">text =</span> <span class="st">&quot;1+2-3*4/5 # a comment&quot;</span>))</span></code></pre></div>
 <pre><code>## [1] &quot;expression(1 + 2 - 3 * 4/5)&quot;</code></pre>
 <p>The method to preserve comments is to protect them as strings in R expressions. For example, there is a single line of comments in the source code:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># asdf</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>  <span class="co"># asdf</span></span></code></pre></div>
 <p>It will be first masked as</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="st">&quot;.IDENTIFIER1  # asdf.IDENTIFIER2&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="st">&quot;.IDENTIFIER1  # asdf.IDENTIFIER2&quot;</span>)</span></code></pre></div>
 <p>which is a legal R expression, so <code>base::parse()</code> can deal with it and will no longer remove the disguised comments. In the end the identifiers will be removed to restore the original comments, i.e. the strings <code>invisible(&quot;.IDENTIFIER1</code> and <code>.IDENTIFIER2&quot;)</code> are replaced with empty strings.</p>
 <p>Inline comments are handled differently: two spaces will be added before the hash symbol <code>#</code>, e.g.</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="co">#  comments</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span><span class="co">#  comments</span></span></code></pre></div>
 <p>will become</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span>  <span class="co">#  comments</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span>  <span class="co">#  comments</span></span></code></pre></div>
 <p>Inline comments are first disguised as a weird operation with its preceding R code, which is essentially meaningless but syntactically correct! For example,</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span> <span class="sc">%\b%</span> <span class="st">&quot;#  comments&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">+</span><span class="dv">1</span> <span class="sc">%\b%</span> <span class="st">&quot;#  comments&quot;</span></span></code></pre></div>
 <p>then <code>base::parse()</code> will deal with this expression; again, the disguised comments will not be removed. In the end, inline comments will be freed as well (remove the operator <code>%\b%</code> and surrounding double quotes).</p>
 <p>All these special treatments to comments are due to the fact that <code>base::parse()</code> and <code>base::deparse()</code> can tidy the R code at the price of dropping all the comments.</p>
 </div>
@@ -481,6 +504,11 @@ matrix(rnorm(10), 5)
 <tr class="odd">
 <td><code>brace.newline</code></td>
 <td><code>options(&#39;formatR.brace.newline&#39;)</code></td>
+<td><code>FALSE</code></td>
+</tr>
+<tr class="even">
+<td><code>args.newline</code></td>
+<td><code>options(&#39;formatR.args.newline&#39;)</code></td>
 <td><code>FALSE</code></td>
 </tr>
 </tbody>

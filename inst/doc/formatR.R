@@ -29,7 +29,7 @@ sessionInfo()
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
 
 ## ----example, eval=FALSE, tidy.opts=list(width.cutoff=50)-----------
@@ -46,7 +46,7 @@ sessionInfo()
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
 
 ## ----collapse=TRUE--------------------------------------------------
@@ -69,7 +69,7 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  tidy_eval()
 #  # without specifying any arguments, it reads code from clipboard
 
-## ----example, eval=FALSE, echo=6, tidy.opts=list(arrow=TRUE)--------
+## ----example, eval=FALSE, echo=5, tidy.opts=list(arrow=TRUE)--------
 #  ## comments are retained;
 #  # a comment block will be reflowed if it contains long comments;
 #  #' roxygen comments will not be wrapped in any case
@@ -83,10 +83,10 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
 
-## ----example, eval=FALSE, echo=1:6, tidy.opts=list(blank = FALSE)----
+## ----example, eval=FALSE, echo=1:5, tidy.opts=list(blank = FALSE)----
 #  ## comments are retained;
 #  # a comment block will be reflowed if it contains long comments;
 #  #' roxygen comments will not be wrapped in any case
@@ -100,10 +100,10 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
 
-## ----example, eval=FALSE, echo=6, tidy.opts=list(indent = 2)--------
+## ----example, eval=FALSE, echo=5, tidy.opts=list(indent = 2)--------
 #  ## comments are retained;
 #  # a comment block will be reflowed if it contains long comments;
 #  #' roxygen comments will not be wrapped in any case
@@ -117,8 +117,18 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
+
+## ---- args-code, eval=FALSE-----------------------------------------
+#  shiny::updateSelectizeInput(session, "foo", label = "New Label",
+#                              selected = c("A", "B"), choices = LETTERS,
+#                              server = TRUE)
+
+## ---- args-code, eval=FALSE, tidy.opts=list(args.newline=TRUE)------
+#  shiny::updateSelectizeInput(session, "foo", label = "New Label",
+#                              selected = c("A", "B"), choices = LETTERS,
+#                              server = TRUE)
 
 ## ---- pipe-code, eval=FALSE, tidy=FALSE-----------------------------
 #  mtcars %>% subset(am == 0) %>% lm(mpg~hp, data=.)
@@ -126,7 +136,7 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 ## ---- pipe-code, eval=FALSE, tidy=TRUE------------------------------
 #  mtcars %>% subset(am == 0) %>% lm(mpg~hp, data=.)
 
-## ----example, eval=FALSE, echo=6, tidy.opts=list(brace.newline = TRUE)----
+## ----example, eval=FALSE, echo=5, tidy.opts=list(brace.newline = TRUE)----
 #  ## comments are retained;
 #  # a comment block will be reflowed if it contains long comments;
 #  #' roxygen comments will not be wrapped in any case
@@ -140,7 +150,7 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
 
 ## ----example, eval=FALSE, echo=11:12, tidy.opts=list(wrap = FALSE)----
@@ -157,7 +167,7 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
 
 ## ----example, eval=FALSE, tidy.opts=list(comment = FALSE, width.cutoff = 50)----
@@ -174,7 +184,7 @@ tidy_eval(text = c("a<-1+1;a  # print the value", "matrix(rnorm(10),5)"))
 #  2+2+2    # only 'single quotes' are allowed in comments
 #  
 #  lm(y~x1+x2, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))  ### a linear model
-#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
+#  1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1  # comment after a long line
 #  ## here is a long long long long long long long long long long long long long comment that may be wrapped
 
 ## ----comment-brace, tidy=FALSE, eval=FALSE--------------------------

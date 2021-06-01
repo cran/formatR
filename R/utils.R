@@ -17,12 +17,17 @@ replace_assignment = function(exp) {
   lapply(as.list(exp), codetools::walkCode, w = wc)
 }
 
-## mask comments to cheat R
-mask_comments = function(x, keep.blank.line, wrap, spaces) {
+parse_data = function(x) {
   d = utils::getParseData(parse_source(x))
-  if (nrow(d) == 0 || (n <- sum(d$terminal)) == 0) return(x)
-  d = d[d$terminal, ]
+  d[d$terminal, ]
+}
+
+## mask comments to cheat R
+mask_comments = function(x, keep.blank.line, wrap, arrow, args.newline, spaces) {
+  d = parse_data(x)
+  if ((n <- nrow(d)) == 0) return(x)
   d = fix_parse_data(d, x)
+  if (args.newline) d = insert_arg_breaks(d, spaces)
   d.line = d$line1; d.line2 = d$line2; d.token = d$token; d.text = d$text
 
   # move else back
@@ -33,6 +38,9 @@ mask_comments = function(x, keep.blank.line, wrap, spaces) {
   }
   # how many blank lines after each token?
   blank = c(pmax(d.line[-1] - d.line2[-n] - 1, 0), 0)
+
+  # replace = with <- when = means assignment
+  if (arrow) d.text[d.token == 'EQ_ASSIGN'] = '<-'
 
   i = d.token == 'COMMENT'
   # double backslashes and replace " with ' in comments
@@ -69,17 +77,22 @@ mask_comments = function(x, keep.blank.line, wrap, spaces) {
       d.text[i] = one_string(c(d.text[i], rep(blank.comment, blank[i])))
   }
   # break lines after some infix operators such as %>%
-  d.text = gsub(paste0('^(%)(', infix_ops, ')(%)$'), paste0('\\1\\2', spaces, '\\3'), d.text)
-  # similarly break lines after |>; later restore %|>|>% to |> in unmask_source()
-  d.text[d.text == '|>'] = paste0('%', '|>|>', spaces, '%')
+  d.text = gsub(paste0('^(%)(', infix_ops, ')(%)$'), paste0('\\1\b\\2', spaces, '\\3'), d.text)
+  # similarly break lines after |>; later restore %\b|>% to |> in unmask_source()
+  d.text[d.text == '|>'] = paste0('%', '\b|>', spaces, '%')
+  # preserve the assignment operator ->
+  d.text[d.text == '->'] = '%\b->%'
 
   unlist(lapply(split(d.text, d.line), paste, collapse = ' '), use.names = FALSE)
 }
 
 infix_ops = '[>$]|T>|<>'
 
-restore_pipe = function(x) {
-  gsub('%[|]>[|]> +%\\s*$', '|>', x)
+restore_infix = function(x) {
+  x = gsub('%\b([^ %]+)%', '\\1', x)
+  x = gsub('%\b([|]>) +%\\s*', '\\1', x)
+  x = gsub('(%)\b([^ ]+) +(%)\\s*$', '\\1\\2\\3', x)
+  x
 }
 
 # no blank lines before an 'else' statement!
@@ -118,13 +131,12 @@ reflow_comments = function(x, width, wrap) {
 }
 
 # reindent lines with a different number of spaces
-reindent_lines = function(text, n = 2) {
+reindent_lines = function(text, spaces = rep_chars(n), n = 2) {
   if (length(text) == 0) return(text)
-  if (n == 4) return(text)  # no need to do anything
-  s = paste(rep(' ', n), collapse = '')
+  if (spaces == '    ') return(text)  # no need to do anything
   t1 = gsub('^( *)(.*)', '\\1', text)
   t2 = gsub('^( *)(.*)', '\\2', text)
-  paste0(gsub(' {4}', s, t1), t2)
+  paste0(gsub(' {4}', spaces, t1), t2)
 }
 
 # move { to the next line
@@ -195,6 +207,81 @@ mask_line_break = function(x) {
   .env$line_break = m
   gsub('\n', m, x)
 }
+
+# add a long argument to a function call, so that other arguments can be pushed
+# to the next line; this is for breaking arguments onto new lines, e.g.,
+# c(a = 1) -> c(`\b    \b`, a = 1, `\b    \b#`) ->
+# c(`\b    \b`,
+#   a = 1,
+#   `\b    \b#`)
+# ->
+# c(
+#   a = 1
+# )
+insert_arg_breaks = function(d, spaces) {
+  if (length(i <- which(d$token %in% c('SYMBOL_FUNCTION_CALL', 'FUNCTION'))) == 0)
+    return(d)
+  i1 = i[d[i + 1, 'token'] == "'('"] + 1  # the next line must be (
+  i1 = i1[d[i1 + 1, 'token'] != "')'"]  # there must be arguments inside ()
+  if (length(i1) == 0) return(d)
+  i2 = which(d$token == "')'")
+  i2 = i2[d[i2, 'parent'] %in% d[i1, 'parent']]  # ) that shares same parent as (
+  if (length(i1) != length(i2)) {
+    warning('( and ) do not match in function calls.')
+    return(d)
+  }
+  s1 = arg_spaces(spaces, d[i1, 'parent'])
+  s2 = arg_spaces(spaces, d[i2, 'parent'], '#')
+  s3 = gsub('#', '##', s2)
+  d[i1, 'text'] = paste0('(', s1, ',')
+  d[i2, 'text'] = paste0(',', s2, ',', s3, ')')
+  d
+}
+
+arg_spaces = function(x, id, id2 = '') sprintf('`%s\b%s\b%s`', id, x, id2)
+
+# restore breaks for all function calls
+restore_arg_breaks = function(
+  x, width, spaces = rep_chars(width), indent = '    ', split = FALSE
+) {
+  s = gsub('\b', '\\\\\\\\b', arg_spaces(spaces, '([0-9]+)', '#{0,2}'))
+  if (length(grep(s, x)) == 0) return(x)
+  if (split) x = one_string(x)
+  m = gregexpr(s, x)
+  id = gsub(s, '\\1', unlist(regmatches(x, m)))
+  for (i in sort(as.integer(unique(id)))) {
+    x = restore_arg_break(x, i, s, width, indent)
+  }
+  if (split) x = split_lines(x)
+  x
+}
+
+# restore one function call
+restore_arg_break = function(x, i, s, width, indent) {
+  s2 = paste0(s, '(,\\s*)?')
+  t = sub('([0-9]+)', i, s, fixed = TRUE)
+  r = sprintf('(\\()%s,\\s*?(\n\\s*)(.*?)\\s*,\\s*%s,\\s*?(\n\\s*)%s(\\))', t, t, t)
+  m = gregexpr(r, x)
+  regmatches(x, m) = lapply(regmatches(x, m), function(z) {
+    if (length(z) == 0) return(z)
+    # first try not to move arguments onto new lines and check if the code
+    # exceeds the desired width
+    x1 = gsub(r, '\\1\\3\\5', z)
+    # if all arguments fit one line, just put them on one line
+    if (!grepl('\n', x1) &&
+        !any(exceed_width(split_lines(gsub(s2, '', x1)), width))) return(x1)
+    x1 = gsub(r, '\\1\\2\\3\\4\\5', z)
+    # indent ) back one level
+    sub(sprintf('(\n)%s(\\s*\\))$', indent), '\\1\\2', x1)
+  })
+  x
+}
+
+exceed_width = function(x, width) nchar(x, type = 'width') > width
+
+split_lines = function(x) unlist(strsplit(x, '\n'))
+
+rep_chars = function(width, char = ' ') paste(rep(char, width), collapse = '')
 
 trimws = function(x, which = c('both', 'left', 'right')) {
   switch(match.arg(which),

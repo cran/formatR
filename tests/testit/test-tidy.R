@@ -105,8 +105,9 @@ assert('keep.blank.line=FALSE removes blank lines', {
   (tidy.res(x1, blank = FALSE) %==% c('1 + 1', 'if (F) {\n}'))
 })
 
-assert('= can be replaced with <- when replace.assign=TRUE', {
-  (tidy.res('x=1;c(x=1)', arrow = TRUE) %==% c('x <- 1', 'c(x = 1)'))
+assert('The assignment operator = can be replaced with <- when arrow = TRUE', {
+  (tidy.res('x=1;c(x=1) # abc', arrow = TRUE) %==% c('x <- 1', 'c(x = 1)  # abc'))
+  (tidy.res('x=1;c(x=1) # abc', arrow = TRUE, comment=FALSE) %==% c('x <- 1', 'c(x = 1)'))
 })
 
 assert('since R 3.0.0 comments can be written with double quotes in them', {
@@ -158,4 +159,52 @@ assert('magrittr lines are wrapped after the pipes', {
 
 if (getRversion() >= '4.1.0') assert('The new pipe |> is supported', {
   (tidy.res('1|>c()') %==% '1 |>\n    c()')
+})
+
+assert('The right arrow -> assignment operator is supported', {
+  (tidy.res('1->a# right assign') %==% '1 -> a  # right assign')
+})
+
+assert('args.newline = TRUE can start function arguments on a new line', {
+  x1 = 'c(aaaaa=1,bbbbb=2,ccccc=3,ddddd=4)'
+  (tidy.res(x1, args.newline = TRUE, width.cutoff = 20) %==%
+     'c(\n    aaaaa = 1, bbbbb = 2,\n    ccccc = 3, ddddd = 4\n)')
+  (tidy.res(x1, args.newline = TRUE, width.cutoff = 40) %==%
+      'c(\n    aaaaa = 1, bbbbb = 2, ccccc = 3, ddddd = 4\n)')
+  # strict width
+  (tidy.res(x1, args.newline = TRUE, width.cutoff = I(40)) %==%
+      'c(\n    aaaaa = 1, bbbbb = 2, ccccc = 3,\n    ddddd = 4\n)')
+  (tidy.res(x1, args.newline = TRUE, width.cutoff = I(23), indent = 2) %==%
+      'c(\n  aaaaa = 1, bbbbb = 2,\n  ccccc = 3, ddddd = 4\n)')
+  # when arguments can fit one line, don't break the line after function name
+  (tidy.res(x1, args.newline = TRUE, width.cutoff = 45) %==%
+      'c(aaaaa = 1, bbbbb = 2, ccccc = 3, ddddd = 4)')
+  # nested calls
+  x2 = 'lm(y~x1+x2+x3+x4+x5+x6+x7+x8, data=data.frame(y=rnorm(100),x1=rnorm(100),x2=rnorm(100)))'
+  (tidy.res(x2, args.newline = TRUE, width.cutoff = 20, indent = 2) %==%
+      'lm(
+  y ~ x1 + x2 + x3 +
+    x4 + x5 + x6 +
+    x7 + x8, data = data.frame(
+    y = rnorm(100),
+    x1 = rnorm(100),
+    x2 = rnorm(100)
+  )
+)')
+  (tidy.res(x2, args.newline = TRUE, width.cutoff = I(25), indent = 2) %==%
+      'lm(
+  y ~ x1 + x2 + x3 + x4 +
+    x5 + x6 + x7 + x8,
+  data = data.frame(
+    y = rnorm(100),
+    x1 = rnorm(100),
+    x2 = rnorm(100)
+  )
+)')
+  # also works on function() definitions in addition to function calls
+  x3 = 'my_sum=function(a=1,b=2,c=3,d=4,e=5,f=6,g=7){return(a+b+c)}'
+  (tidy.res(x3, args.newline = TRUE, width.cutoff = 20, indent = 2) %==%
+      'my_sum = function(\n  a = 1, b = 2, c = 3,\n  d = 4, e = 5, f = 6,\n  g = 7\n) {\n  return(a + b + c)\n}')
+  (tidy.res(x3, args.newline = TRUE, width.cutoff = I(33), indent = 2) %==%
+      'my_sum = function(\n  a = 1, b = 2, c = 3, d = 4,\n  e = 5, f = 6, g = 7\n) {\n  return(a + b + c)\n}')
 })

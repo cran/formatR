@@ -26,6 +26,9 @@
 #'   length is at or over this number, the function will try to break it into a
 #'   new line. In other words, this is the \emph{lower bound} of the line width.
 #'   See \sQuote{Details} if an upper bound is desired instead.
+#' @param args.newline Whether to start the arguments of a function call on a
+#'   new line instead of after the function name and \code{(} when the arguments
+#'   cannot fit one line.
 #' @param output Whether to output to the console or a file using
 #'   \code{\link{cat}()}.
 #' @param text An alternative way to specify the input: if \code{NULL}, the
@@ -55,6 +58,7 @@ tidy_source = function(
   indent = getOption('formatR.indent', 4),
   wrap = getOption('formatR.wrap', TRUE),
   width.cutoff = getOption('formatR.width', getOption('width')),
+  args.newline = getOption('formatR.args.newline', FALSE),
   output = TRUE, text = NULL, ...
 ) {
   if (is.null(text)) {
@@ -83,12 +87,13 @@ tidy_source = function(
   if (width.cutoff < 20) width.cutoff[1] = 20
   # insert enough spaces into infix operators such as %>% so the lines can be
   # broken after the operators
-  spaces = paste(rep(' ', width.cutoff), collapse = '')
-  if (comment) text = mask_comments(text, blank, wrap, spaces)
+  spaces = rep_chars(width.cutoff)
+  if (comment) text = mask_comments(text, blank, wrap, arrow, args.newline, spaces)
   text.mask = tidy_block(
-    text, width.cutoff, arrow && length(grep('=', text)), indent, brace.newline, wrap
+    text, width.cutoff, arrow && !comment, rep_chars(indent), brace.newline,
+    wrap, args.newline, spaces
   )
-  text.tidy = if (comment) unmask_source(text.mask, spaces) else text.mask
+  text.tidy = if (comment) unmask_source(text.mask) else text.mask
   # restore new lines in the beginning and end
   if (blank) text.tidy = c(rep('', n1), text.tidy, rep('', n2))
   if (output) cat(text.tidy, sep = '\n', ...)
@@ -111,7 +116,10 @@ blank.comment2 = paste0('^\\s*', gsub('\\(', '\\\\(', blank.comment), '\\s*$')
 # first, perform a (semi-)binary search to find the greatest cutoff width such
 # that the width of the longest line <= `width`; if the search fails, use
 # brute-force to try all possible widths
-deparse2 = function(expr, width, warn = getOption('formatR.width.warning', TRUE)) {
+deparse2 = function(
+  expr, width, spaces = '', indent = '    ',
+  warn = getOption('formatR.width.warning', TRUE)
+) {
   wmin = 20  # if deparse() can't manage it with width.cutoff <= 20, issue a warning
   wmax = min(500, width + 10)  # +10 because a larger width may result in smaller actual width
 
@@ -125,12 +133,14 @@ deparse2 = function(expr, width, warn = getOption('formatR.width.warning', TRUE)
     i = as.character(w)
     if (!is.na(x <- k[i])) return(x)
     x = deparse(expr, w)
-    x = gsub('\\s+$', '', x)
+    x = trimws(x, 'right')
     d[[i]] <<- x
     x2 = grep(pat.comment, x, invert = TRUE, value = TRUE)  # don't check comments
     x2 = gsub(pat.infix, '\\1\\2\\3', x2)  # remove extra spaces in %>% operators
-    x2 = restore_pipe(x2)
-    p[[i]] <<- x2[nchar(x2, type = 'width') > width]
+    x2 = restore_infix(x2)
+    x2 = reindent_lines(x2, indent)
+    x2 = restore_arg_breaks(x2, width, spaces, indent, split = TRUE)
+    p[[i]] <<- x2[exceed_width(x2, width)]
     k[i] <<- length(p[[i]]) == 0
   }
 
@@ -160,45 +170,48 @@ deparse2 = function(expr, width, warn = getOption('formatR.width.warning', TRUE)
 
 # wrapper around parse() and deparse()
 tidy_block = function(
-  text, width = getOption('width'), arrow = FALSE, indent = 4,
-  brace.newline = FALSE, wrap = TRUE
+  text, width = getOption('width'), arrow = FALSE, indent = '    ',
+  brace.newline = FALSE, wrap = TRUE, args.newline = FALSE, spaces = rep_chars(width)
 ) {
   exprs = parse_only(text)
   if (length(exprs) == 0) return(character(0))
   exprs = if (arrow) replace_assignment(exprs) else as.list(exprs)
-  deparse = if (inherits(width, 'AsIs')) deparse2 else base::deparse
+  deparse = if (inherits(width, 'AsIs')) {
+    function(x, width) deparse2(x, width, spaces, indent)
+  } else base::deparse
   unlist(lapply(exprs, function(e) {
     x = deparse(e, width)
+    x = trimws(x, 'right')
     x = reindent_lines(x, indent)
     # remove white spaces on blank lines
     x = gsub(blank.comment2, '', x)
     x = reflow_comments(x, width, wrap)
     if (brace.newline) x = move_leftbrace(x)
-    x = restore_pipe(x)
-    one_string(x)
+    x = restore_infix(x)
+    x = one_string(x)
+    if (args.newline) x = restore_arg_breaks(x, width, spaces, indent)
+    x
   }))
 }
 
 # Restore the real source code from the masked text
-unmask_source = function(text.mask, spaces) {
-  if (length(text.mask) == 0) return(text.mask)
+unmask_source = function(x) {
+  if (length(x) == 0) return(x)
   m = .env$line_break
-  if (!is.null(m)) text.mask = gsub(m, '\n', text.mask)
+  if (!is.null(m)) x = gsub(m, '\n', x)
   # if the comments were separated into the next line, then remove '\n' after
   # the identifier first to move the comments back to the same line
-  text.mask = gsub('(%\b%)[ ]*\n', '\\1', text.mask)
+  x = gsub('(%\b%)[ ]*\n', '\\1', x)
   # move 'else ...' back to the last line
-  text.mask = gsub('\n\\s*else(\\s+|$)', ' else\\1', text.mask)
-  if (any(grepl('\\\\\\\\', text.mask)) || any(grepl(inline.comment, text.mask))) {
-    m = gregexpr(inline.comment, text.mask)
-    regmatches(text.mask, m) = lapply(regmatches(text.mask, m), restore_bs)
+  x = gsub('\n\\s*else(\\s+|$)', ' else\\1', x)
+  if (any(grepl('\\\\\\\\', x)) || any(grepl(inline.comment, x))) {
+    m = gregexpr(inline.comment, x)
+    regmatches(x, m) = lapply(regmatches(x, m), restore_bs)
   }
-  # restore infix operators such as %>%
-  text.tidy = gsub(paste0('(%)(', infix_ops, ')', spaces, '(%)\\s*(\n)'), '\\1\\2\\3\\4', text.mask)
   # inline comments should be terminated by $ or \n
-  text.tidy = gsub(paste(inline.comment, '(\n|$)', sep = ''), '  \\1\\2', text.tidy)
+  x = gsub(paste(inline.comment, '(\n|$)', sep = ''), '  \\1\\2', x)
   # the rest of inline comments should be appended by \n
-  gsub(inline.comment, '  \\1\n', text.tidy)
+  gsub(inline.comment, '  \\1\n', x)
 }
 
 
