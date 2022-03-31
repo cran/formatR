@@ -100,7 +100,7 @@ if(F){
 
 }
 '
-assert('keep.blank.line=FALSE removes blank lines', {
+assert('blank=FALSE removes blank lines', {
   (tidy.res(x1) %==% c('1 + 1', '', 'if (F) {\n\n}', ''))
   (tidy.res(x1, blank = FALSE) %==% c('1 + 1', 'if (F) {\n}'))
 })
@@ -159,6 +159,10 @@ assert('magrittr lines are wrapped after the pipes', {
 
 if (getRversion() >= '4.1.0') assert('The new pipe |> is supported', {
   (tidy.res('1|>c()') %==% '1 |>\n    c()')
+})
+
+assert('The magrittr pipe can be substituted with the base R pipe', {
+  (tidy.res('1%>%c()%>%paste()', pipe = TRUE) %==% '1 |>\n    c() |>\n    paste()')
 })
 
 assert('The right arrow -> assignment operator is supported', {

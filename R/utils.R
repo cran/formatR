@@ -1,29 +1,10 @@
-# replace `=` by `<-` in expressions
-replace_assignment = function(exp) {
-  wc = codetools::makeCodeWalker(
-    call = function(e, w) {
-      cl = codetools::walkCode(e[[1]], w)
-      arg = lapply(as.list(e[-1]), function(a) if (missing(a)) NA else {
-        codetools::walkCode(a, w)
-      })
-      as.call(c(list(cl), arg))
-    },
-    leaf = function(e, w) {
-      if (length(e) == 0 || inherits(e, "srcref")) return(NULL)
-      # x = 1 is actually `=`(x, 1), i.e. `=` is a function
-      if (identical(e, as.name("="))) e <- as.name("<-")
-      e
-    })
-  lapply(as.list(exp), codetools::walkCode, w = wc)
-}
-
 parse_data = function(x) {
-  d = utils::getParseData(parse_source(x))
+  d = utils::getParseData(parse_source(x, TRUE))
   d[d$terminal, ]
 }
 
-## mask comments to cheat R
-mask_comments = function(x, keep.blank.line, wrap, arrow, args.newline, spaces) {
+# mask comments in strings so that deparse() will not drop them
+mask_comments = function(x, comment, blank.line, wrap, arrow, pipe, args.newline, spaces) {
   d = parse_data(x)
   if ((n <- nrow(d)) == 0) return(x)
   d = fix_parse_data(d, x)
@@ -39,11 +20,13 @@ mask_comments = function(x, keep.blank.line, wrap, arrow, args.newline, spaces) 
   # how many blank lines after each token?
   blank = c(pmax(d.line[-1] - d.line2[-n] - 1, 0), 0)
 
-  # replace = with <- when = means assignment
+  # substitute = with <- when = means assignment
   if (arrow) d.text[d.token == 'EQ_ASSIGN'] = '<-'
+  # substitute %>% with |>
+  if (pipe) d.text[d.token == 'SPECIAL' & d.text == '%>%'] = '|>'
 
-  i = d.token == 'COMMENT'
-  # double backslashes and replace " with ' in comments
+  i = if (comment) d.token == 'COMMENT' else logical(n)
+  # double backslashes and substitute " with ' in comments
   d.text[i] = gsub('"', "'", gsub('\\\\', '\\\\\\\\', d.text[i]))
 
   c0 = d.line[-1] != d.line[-n]  # is there a line change?
@@ -72,7 +55,7 @@ mask_comments = function(x, keep.blank.line, wrap, arrow, args.newline, spaces) 
   d.text[c2] = sprintf('%%\b%% "%s"', d.text[c2])
 
   # add blank lines
-  if (keep.blank.line) for (i in seq_along(d.text)) {
+  if (blank.line) for (i in seq_along(d.text)) {
     if (blank[i] > 0)
       d.text[i] = one_string(c(d.text[i], rep(blank.comment, blank[i])))
   }
@@ -153,14 +136,11 @@ move_leftbrace = function(x) {
   x
 }
 
-# parse but do not keep source (moved from knitr)
-parse_only = function(code) {
+# base::parse(text = NULL) will ask for user input but should return an empty
+# expression instead
+parse_source = function(code, keep.source = FALSE) {
   if (length(code) == 0) return(expression())
-  base::parse(text = code, keep.source = FALSE)
-}
-
-parse_source = function(lines) {
-  parse(text = lines, keep.source = TRUE)
+  base::parse(text = code, keep.source = keep.source)
 }
 
 # restore backslashes

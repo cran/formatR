@@ -1,15 +1,15 @@
-#' Reformat R code while preserving blank lines and comments
+#' Reformat R code
 #'
-#' Read R code from a file or the clipboard and reformat it. That this function
-#' preserves blank lines and comments is a different behavior from that of
-#' \code{\link{parse}()} and \code{\link{deparse}()}. This function can also
-#' replace \code{=} with \code{<-} where \code{=} means assignment, and
-#' re-indent code with a specified number of spaces.
+#' Read R code from a file or the clipboard and reformat it. This function is
+#' based on \code{\link{parse}()} and \code{\link{deparse}()}, but it does
+#' several other things, such as preserving blank lines and comments,
+#' substituting the assignment operator \code{=} with \code{<-}, and
+#' re-indenting code with a specified number of spaces.
 #'
-#' Value of the argument \code{width.cutoff} wrapped in \code{\link{I}()} (e.g.,
-#' \code{I(60)}) will be treated as the \emph{upper bound} of the line width.
-#' The corresponding argument to \code{deparse()} is a lower bound, so the
-#' function will perform a binary search for a width value that can make
+#' A value of the argument \code{width.cutoff} wrapped in \code{\link{I}()}
+#' (e.g., \code{I(60)}) will be treated as the \emph{upper bound} of the line
+#' width. The corresponding argument to \code{deparse()} is a lower bound, so
+#' the function will perform a binary search for a width value that can make
 #' \code{deparse()} return code with line width smaller than or equal to the
 #' \code{width.cutoff} value. If the search fails, a warning will signal,
 #' suppressible by global option \code{options(formatR.width.warning = FALSE)}.
@@ -17,7 +17,10 @@
 #'   the clipboard).
 #' @param comment Whether to keep comments.
 #' @param blank Whether to keep blank lines.
-#' @param arrow Whether to replace the assign operator \code{=} with \code{<-}.
+#' @param arrow Whether to substitute the assignment operator \code{=} with
+#'   \code{<-}.
+#' @param pipe Whether to substitute the \pkg{magrittr} pipe \code{\%>\%} with
+#'   R's native pipe operator \code{|>}.
 #' @param brace.newline Whether to put the left brace \code{\{} to a new line.
 #' @param indent Number of spaces to indent the code.
 #' @param wrap Whether to wrap comments to the linewidth determined by
@@ -54,6 +57,7 @@ tidy_source = function(
   source = 'clipboard', comment = getOption('formatR.comment', TRUE),
   blank = getOption('formatR.blank', TRUE),
   arrow = getOption('formatR.arrow', FALSE),
+  pipe = getOption('formatR.pipe', FALSE),
   brace.newline = getOption('formatR.brace.newline', FALSE),
   indent = getOption('formatR.indent', 4),
   wrap = getOption('formatR.wrap', TRUE),
@@ -88,10 +92,9 @@ tidy_source = function(
   # insert enough spaces into infix operators such as %>% so the lines can be
   # broken after the operators
   spaces = rep_chars(width.cutoff)
-  if (comment) text = mask_comments(text, blank, wrap, arrow, args.newline, spaces)
+  text = mask_comments(text, comment, blank, wrap, arrow, pipe, args.newline, spaces)
   text.mask = tidy_block(
-    text, width.cutoff, arrow && !comment, rep_chars(indent), brace.newline,
-    wrap, args.newline, spaces
+    text, width.cutoff, rep_chars(indent), brace.newline, wrap, args.newline, spaces
   )
   text.tidy = if (comment) unmask_source(text.mask) else text.mask
   # restore new lines in the beginning and end
@@ -170,16 +173,15 @@ deparse2 = function(
 
 # wrapper around parse() and deparse()
 tidy_block = function(
-  text, width = getOption('width'), arrow = FALSE, indent = '    ',
+  text, width = getOption('width'), indent = '    ',
   brace.newline = FALSE, wrap = TRUE, args.newline = FALSE, spaces = rep_chars(width)
 ) {
-  exprs = parse_only(text)
+  exprs = parse_source(text)
   if (length(exprs) == 0) return(character(0))
-  exprs = if (arrow) replace_assignment(exprs) else as.list(exprs)
   deparse = if (inherits(width, 'AsIs')) {
     function(x, width) deparse2(x, width, spaces, indent)
   } else base::deparse
-  unlist(lapply(exprs, function(e) {
+  unlist(lapply(as.list(exprs), function(e) {
     x = deparse(e, width)
     x = trimws(x, 'right')
     x = reindent_lines(x, indent)
@@ -250,4 +252,60 @@ tidy_file = function(file, ...) {
     message("tidying ", f)
     try(tidy_source(f, file = f, ...))
   }
+}
+
+#' Reformat R code in RStudio IDE
+#'
+#' If any R code is selected in the RStudio source editor, this function
+#' reformats the selected code; otherwise it reformats the current open file (if
+#' it is unsaved, it will be automatically saved).
+#' @param ... Arguments to be passed to \code{\link{tidy_source}()}, among which
+#'   the \code{indent} argument will respect the value you set for the number of
+#'   spaces for indentation in RStudio.
+#' @note If the output is not what you want, you can undo the change in the
+#'   editor (Ctrl + Z or Command + Z).
+#' @export
+#' @examplesIf interactive()
+#' formatR::tidy_rstudio()
+#' formatR::tidy_rstudio(args.newline = TRUE)
+tidy_rstudio = function(...) {
+  ctx = rstudio_context()
+  if (is.null(getOption('formatR.indent'))) {
+    opts = options(formatR.indent = rstudioapi::readRStudioPreference('num_spaces_for_tab', 4))
+    on.exit(options(opts), add = TRUE)
+  }
+  if (length(ctx$selection) == 1 && !identical(txt <- ctx$selection[[1]]$text, '')) {
+    res = tidy_source(text = txt, output = FALSE, ...)$text.tidy
+    rstudioapi::modifyRange(ctx$selection[[1]]$range, one_string(res), ctx$id)
+  } else {
+    rstudioapi::documentSave(ctx$id)
+    res = tidy_source(ctx$path, output = FALSE, ...)$text.tidy
+    writeLines(enc2utf8(res), ctx$path, useBytes = TRUE)
+  }
+}
+
+rstudio_context = function() {
+  ctx = rstudioapi::getSourceEditorContext()
+  if (is.null(ctx)) stop('There is no open document in the RStudio source editor.')
+  ctx
+}
+
+#' Substitute the \pkg{magrittr} pipe with R's native pipe operator
+#'
+#' Parse the R code in the RStudio editor, identify \code{\%>\%}, and substitute
+#' with \code{|>}.
+#' @note Currently this function only works inside the RStudio IDE, and may be
+#'   extended in future to deal with arbitrary R code elsewhere.
+#' @export
+#' @examplesIf interactive()
+#' formatR::tidy
+tidy_pipe = function() {
+  ctx = rstudio_context()
+  d = parse_data(ctx$contents)
+  i = d$token == 'SPECIAL' & d$text == '%>%'
+  if (!any(i)) return(invisible())
+  d = d[i, c('line1', 'col1', 'line2', 'col2')]
+  d[, 4] = d[, 4] + 1
+  r = unname(as.list(as.data.frame(t(d))))
+  rstudioapi::modifyRange(r, '|>', ctx$id)
 }
